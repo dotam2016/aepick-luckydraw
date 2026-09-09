@@ -1,0 +1,36 @@
+{
+  "attract.title": "LUCKY DRAW",
+  "attract.subtitle": "One pick, one lucky moment",
+  "attract.staffNotice": "Ask our staff to start your play",
+  "attract.blocked": "Please wait a moment. Our staff is checking.",
+  "attract.eventClosed": "Today's event has ended. Thank you!",
+
+  "tutorial.line1": "Move left and right to aim",
+  "tutorial.line2": "Then press CATCH",
+
+  "aim.guide": "Move left and right to aim",
+  "aim.hurry": "Hurry!",
+  "aim.timeLeft": "Time left",
+  "aim.oncePerPlay": "1 play only",
+
+  "action.catch": "CATCH",
+
+  "result.winTitle": "YOU GOT IT!",
+  "result.winPrize": "You won {prize}",
+  "result.missTitle": "SO CLOSE!",
+  "result.missBody": "Thanks for playing with us",
+  "result.codeLabel": "Prize code",
+  "result.showToStaff": "Show this code to our staff",
+  "result.testWatermark": "TEST",
+
+  "tier.t1": "1st Prize",
+  "tier.t2": "2nd Prize",
+  "tier.t3": "3rd Prize",
+  "tier.t4": "4th Prize",
+  "tier.t5": "5th Prize",
+  "tier.miss": "Better luck next time",
+
+  "error.generic": "Please wait a moment. Our staff is checking.",
+  "error.network": "Please wait a moment. Our staff is checking.",
+  "error.callStaff": "Please call our staff"
+}

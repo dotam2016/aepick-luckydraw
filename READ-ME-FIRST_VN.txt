@@ -1,0 +1,240 @@
+```text
+========================================================
+ AEPICK POPUP LUCKY DRAW - GÓI SẢN PHẨM
+ (Tính đến ngày 2026-08-06 / Bản portable để sử dụng khi đi công tác)
+========================================================
+
+[ Những điều cần biết trước ]
+--------------------------------------------------------
+  Gói này hiện đang ở trạng thái **đang trong quá trình phát triển**.
+  Khác với Beauty DNA, đây không phải là một "bản hoàn thiện chỉ dành
+  cho mục đích demo".
+
+  Có thể chạy game từ đầu đến cuối và toàn bộ màn hình
+  dành cho operator/admin cũng đang hoạt động. Tuy nhiên,
+  các hạng mục dưới đây vẫn chưa được kiểm chứng đầy đủ.
+
+    - Hiệu năng trên PC thực tế sẽ được sử dụng để lắp đặt
+      (hiện mới hoàn tất đo trên PC phát triển)
+    - Độ ổn định khi vận hành liên tục trong 8 giờ
+    - Thiết lập Windows Kiosk Mode
+    - Quyết định cuối cùng về phương thức trình diễn A/B
+      (cả hai phương thức đều đã được implement)
+
+  Các căn cứ và số liệu chi tiết được lưu trong thư mục docs/.
+
+
+[ BƯỚC 1 ] Cài đặt Node.js (chỉ cần thực hiện 1 lần, cần Internet)
+--------------------------------------------------------
+  Truy cập https://nodejs.org → tải bản LTS → cài đặt.
+
+  * Bắt buộc phải là phiên bản 22.13 trở lên.
+    (Hệ thống sử dụng SQLite tích hợp sẵn và không thể chạy
+     trên phiên bản thấp hơn 22.13)
+  * Nếu đã cài đặt Node.js, chỉ cần kiểm tra version.
+
+
+[ BƯỚC 2 ] Đặt thư mục này vào vị trí mong muốn
+--------------------------------------------------------
+  Có thể đặt thư mục đã giải nén ở bất kỳ đâu.
+  (Ví dụ: Desktop hoặc C:\AEPICK-LD)
+
+  ※ Tránh đặt trong thư mục Dropbox / OneDrive.
+    Việc đồng bộ hóa có thể khóa file và khiến quá trình build thất bại.
+    (Đây là vấn đề đã thực sự xảy ra trong quá trình phát triển)
+
+
+[ BƯỚC 3 ] Chạy ứng dụng
+--------------------------------------------------------
+  Double-click START.bat
+
+  - Lần chạy đầu tiên, package sẽ được tự động cài đặt
+    và màn hình sẽ được build.
+    (Cần Internet, khoảng 3~5 phút. Chỉ mất thời gian này trong lần đầu)
+  - Từ lần sau, ứng dụng sẽ khởi động trong vài giây.
+  - Trình duyệt sẽ tự động mở.
+
+
+[ BƯỚC 4 ] Chơi thử game
+--------------------------------------------------------
+  Kiosk   http://localhost:8788/kiosk/
+  Admin   http://localhost:8788/admin
+
+  Để bắt đầu game từ màn hình chờ:
+
+   1) Nhấn giữ **góc trên bên trái màn hình trong 2 giây**
+      (đây là điểm truy cập dành cho operator và không hiển thị trên màn hình)
+   2) Nhập PIN 1234
+   3) [Bắt đầu 1 lượt chơi] → lượt chơi chính thức,
+                         có trừ tồn kho thực tế
+      [Mở Test Session] → chỉ định tier để kiểm tra kết quả mong muốn
+                           (không trừ tồn kho, không tính vào thống kê)
+
+  Trong màn hình chơi, sử dụng các nút trái/phải ở khu vực điều khiển
+  phía dưới để di chuyển cần gắp, và nhấn nút lớn ở giữa để hạ cần gắp.
+  Sau 12 giây, cần gắp sẽ tự động hạ xuống.
+
+  ※ Kết quả (tier) được server xác định trước,
+    physics chỉ có nhiệm vụ thể hiện kết quả đó.
+    Việc điều khiển tốt không làm tăng khả năng nhận tier cao hơn.
+    Đây là thiết kế có chủ đích.
+
+
+[ Khi màn hình không hiển thị ]
+--------------------------------------------------------
+  * Trang Kiosk hiển thị màn hình trắng
+    → Build chưa được thực hiện thành công.
+      Xóa thư mục apps\kiosk\dist rồi chạy lại START.bat.
+
+  * Hiển thị "Node.js 22.13 or newer is required"
+    → Có vấn đề về phiên bản Node.js.
+      Kiểm tra lại BƯỚC 1.
+
+  * Port 8788 đang được sử dụng
+    → Có chương trình khác đang sử dụng port này.
+      Tắt chương trình đó hoặc mở START.bat bằng Notepad,
+      sau đó thêm dòng:
+
+        set PORT=9788
+
+      vào phía trước dòng npm start.
+
+
+[ DỮ LIỆU ]
+--------------------------------------------------------
+  Khi chạy lần đầu, database sẽ được tự động tạo trong
+  server\data\ và các giá trị xác suất/tồn kho mặc định
+  cũng được tự động thiết lập.
+
+  Không cần chuẩn bị riêng.
+
+  Dữ liệu test được tích lũy trong quá trình phát triển
+  không được đưa vào package.
+  (Có hơn 20.000 lượt tham gia nên nếu sử dụng sẽ làm sai lệch thống kê)
+
+  Nếu muốn reset dữ liệu, hãy xóa toàn bộ thư mục
+  server\data\ rồi chạy lại.
+
+
+[ Nếu muốn chia sẻ ra bên ngoài (Tùy chọn) ]
+--------------------------------------------------------
+  Double-click SHARE-ONLINE.bat
+
+  Một địa chỉ public tạm thời sẽ được tạo (*.trycloudflare.com).
+  Khi đóng cửa sổ, địa chỉ này sẽ biến mất.
+
+  * Cần cài đặt cloudflared một lần duy nhất:
+
+      winget install Cloudflare.cloudflared
+
+  * Mỗi lần chạy, hệ thống sẽ **tạo mới Operator PIN
+    và Admin Key**.
+
+    Các giá trị mặc định (1234 / aepick-admin) được ghi trong
+    tài liệu này, vì vậy không được để chúng lộ trực tiếp trên Internet.
+
+    Hãy sử dụng các giá trị được hiển thị trên màn hình.
+
+  * Bất kỳ ai biết địa chỉ đều có thể truy cập.
+
+    Vì lượt chơi thực tế sẽ trừ tồn kho, nếu chỉ dùng cho mục đích
+    demo, hãy sử dụng [Test Session] trong Operator Panel.
+
+
+[ TÀI LIỆU ] Thư mục docs
+--------------------------------------------------------
+  AEPICK_..._Production_Plan_v1.2.docx
+                                      Tài liệu kế hoạch phát triển
+                                      (bản mới nhất)
+
+  04_검증보고서.md
+                                      Kết quả kiểm thử
+
+  05_비주얼_스파이크_결과.md
+                                      Tài liệu đánh giá phương án 3D
+
+  06_3D_전환_기록.md
+                                      Toàn bộ lịch sử thực hiện công việc
+                                      liên quan đến visual
+                                      (tài liệu dài nhất)
+
+  07_성능_벤치마크.md
+                                      Đo lường và đánh giá hiệu năng
+
+  비교자료\
+                                      Hình ảnh so sánh trước / sau
+
+
+[ Nếu muốn tiếp tục phát triển ]
+--------------------------------------------------------
+  npm run dev:server
+      Server (8788)
+
+  npm run dev:kiosk
+      Kiosk development server (5174, thay đổi code sẽ được
+      phản ánh ngay lập tức)
+
+  npm test
+      Unit Test
+
+  npm run e2e
+      API Integration Test
+      (Server phải đang chạy)
+
+  npm run autoplay
+      Tự động kiểm chứng physics
+      (chạy mà không cần trình duyệt)
+
+  ※ Trong quá trình phát triển, sử dụng port 5174.
+    Để kiểm tra bản build, sử dụng 8788/kiosk/.
+
+    Nếu nhầm lẫn hai môi trường này sẽ dẫn đến tình trạng:
+    "Đã sửa code nhưng thay đổi không được phản ánh".
+
+  Các công cụ đo lường nằm trong thư mục tools\.
+  Đây là các công cụ được tạo ra nhằm đánh giá bằng số liệu
+  thay vì chỉ đánh giá bằng mắt.
+
+    bench.mjs
+        Đo hiệu năng rendering (chi phí/tải của từng hiệu ứng)
+
+    palette.mjs
+        So sánh màu sắc của các quả bóng với reference
+
+    wallsweep.mjs
+        Điều chỉnh tone của tường để khớp với reference
+
+    lightfield.mjs
+        Phân bố ánh sáng trong box
+
+    sharpness.mjs
+        Độ sắc nét
+
+    kiosk-shot.mjs
+        Chụp màn hình
+        (điều khiển toàn bộ flow bằng headless)
+
+  Các công cụ này yêu cầu Chrome và local development server.
+
+
+[ Những thành phần không được đưa vào package ]
+--------------------------------------------------------
+  * node_modules (306MB)
+      → START.bat sẽ tự động cài đặt
+
+  * reports/ (967MB)
+      → Các ảnh chụp dùng để chẩn đoán trong quá trình phát triển.
+        Chỉ những nội dung quan trọng đã được chuyển sang
+        docs\비교자료.
+
+  * Test DB (22MB)
+      → Tham khảo mục [DỮ LIỆU] ở trên.
+
+  * 2 video reference
+      → Đây là nội dung của bên thứ ba được lấy từ Instagram,
+        nên không được phép phân phối lại.
+
+        Kết quả phân tích và các số liệu liên quan được lưu tại:
+
+        docs\06_3D_전환_기록.md
+```

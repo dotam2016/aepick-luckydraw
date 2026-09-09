@@ -1,0 +1,402 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: #120d18;
+  font: 13px/1.5 'Segoe UI', -apple-system, 'Malgun Gothic', sans-serif;
+  color: #eee6f4;
+  overflow: hidden;
+}
+
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/*
+ * 키오스크 실제 해상도 1080×1920을 픽셀로 고정하고 transform으로만 축소한다.
+ * height:100vh + aspect-ratio 조합은 컨테이너에 따라 해석이 흔들려
+ * 필드 높이가 의도와 다르게 잡혔다. 픽셀 고정이 예측 가능하다.
+ */
+.stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1080px;
+  height: 1920px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: #0e0a12;
+}
+
+/* 3D 게임 필드 — 상단 70%. 조작부가 하단 30%(576px)를 차지한다. */
+.field {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1080px;
+  height: 1344px;
+}
+.field canvas {
+  display: block;
+  width: 1080px !important;
+  height: 1344px !important;
+}
+
+.refoverlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* ---------------- 패널 ---------------- */
+
+.panel {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 320px;
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(20, 14, 26, 0.94);
+  border: 1px solid #3a2d48;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  z-index: 20;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #3a2d48;
+}
+.head b {
+  flex: 1;
+  font-size: 13px;
+}
+.fps {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: #7fe0a0;
+}
+.fps.warn {
+  color: #e8c05a;
+}
+.fps.bad {
+  color: #e87a7a;
+}
+.x {
+  background: none;
+  border: 0;
+  color: #8a7a99;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #3a2d48;
+}
+.tabs button {
+  flex: 1;
+  background: none;
+  border: 0;
+  color: #8a7a99;
+  padding: 8px 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+}
+.tabs button.on {
+  color: #eee6f4;
+  border-bottom-color: #b678ff;
+}
+
+.body {
+  padding: 10px 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+.row .lbl {
+  width: 96px;
+  flex: 0 0 96px;
+  color: #a897b8;
+  font-size: 12px;
+}
+.row input[type='range'] {
+  flex: 1;
+  accent-color: #b678ff;
+  min-width: 0;
+}
+.row .val {
+  width: 46px;
+  text-align: right;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: #cbb9dd;
+}
+.row .val.mono {
+  width: 64px;
+}
+.row.toggle input {
+  accent-color: #b678ff;
+  width: 16px;
+  height: 16px;
+}
+.row select,
+.row input[type='color'] {
+  flex: 1;
+  background: #241a2e;
+  border: 1px solid #3a2d48;
+  color: #eee6f4;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 12px;
+}
+.row input[type='color'] {
+  height: 26px;
+  padding: 2px;
+}
+
+.note {
+  font-size: 11px;
+  color: #8a7a99;
+  line-height: 1.5;
+  margin: 4px 0 10px;
+  padding: 6px 8px;
+  background: rgba(182, 120, 255, 0.08);
+  border-radius: 6px;
+}
+
+.btnrow {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.act {
+  background: #3d2b52;
+  border: 1px solid #56407080;
+  color: #eee6f4;
+  border-radius: 7px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  flex: 1;
+}
+.act:hover {
+  filter: brightness(1.2);
+}
+.act.on {
+  background: #b678ff;
+  color: #1a0f22;
+}
+.act.ghost {
+  background: transparent;
+}
+
+.refbox {
+  padding: 10px 12px;
+  border-top: 1px solid #3a2d48;
+}
+.refbox .lbl {
+  font-size: 11px;
+  color: #a897b8;
+  margin-bottom: 6px;
+}
+
+.foot {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid #3a2d48;
+}
+
+.fab {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  background: rgba(20, 14, 26, 0.94);
+  border: 1px solid #3a2d48;
+  color: #eee6f4;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+
+/* ---------------- 조작부 (레퍼런스 컨트롤러 스타일) ---------------- */
+
+.controller {
+  position: absolute;
+  top: 1344px;
+  left: 0;
+  width: 1080px;
+  height: 576px;
+  padding: 34px 44px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 레퍼런스의 광택 금속 패널 */
+  background:
+    radial-gradient(120% 70% at 30% 0%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(168deg, #f7eef2 0%, #e6d7de 38%, #f4ebf0 62%, #dcc9d3 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 -14px 40px rgba(120, 70, 95, 0.18) inset;
+  font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+  overflow: hidden;
+}
+
+.controller .timer {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 54px;
+  font-weight: 800;
+  color: #3b2630;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.4%;
+}
+
+.controller .deco {
+  position: absolute;
+  font-size: 42px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 6px rgba(150, 100, 125, 0.4);
+  pointer-events: none;
+}
+.controller .d1 { top: 12%; left: 7%; }
+.controller .d2 { top: 8%; left: 33%; color: #6b3a4a; }
+.controller .d3 { top: 10%; right: 9%; }
+.controller .d4 { bottom: 14%; left: 5%; }
+
+.ctl-row {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+/* 방향 패드 */
+.dpad {
+  display: grid;
+  gap: 18px;
+}
+.dpad.horizontal {
+  grid-template-columns: repeat(2, auto);
+}
+.dpad.cross {
+  grid-template-areas: '. up .' 'left . right' '. down .';
+  grid-template-columns: repeat(3, auto);
+}
+/* 십자 배치는 3행이라 조작부 높이(576px)를 넘긴다 → 버튼을 줄인다 */
+.dpad.cross .pad {
+  width: 112px;
+  height: 112px;
+}
+.dpad.cross .pad .glyph {
+  font-size: 40px;
+}
+.dpad.cross .pad:nth-child(1) { grid-area: up; }
+.dpad.cross .pad:nth-child(2) { grid-area: left; }
+.dpad.cross .pad:nth-child(3) { grid-area: right; }
+.dpad.cross .pad:nth-child(4) { grid-area: down; }
+
+.pad {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  /* 금속 베젤 + 유리 버튼 면 */
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #fbe9ef 0%, var(--ctl-accent) 74%);
+  box-shadow:
+    0 0 0 9px rgba(255, 255, 255, 0.85),
+    0 0 0 16px rgba(120, 75, 95, 0.28),
+    0 15px 30px rgba(120, 70, 95, 0.35);
+  transition: transform 0.09s ease, filter 0.09s ease;
+}
+.pad .glyph {
+  font-size: 52px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(90, 40, 60, 0.45);
+  line-height: 1;
+}
+.pad.on,
+.pad:active {
+  transform: scale(0.94);
+  filter: brightness(1.18);
+}
+
+/* 하강 버튼 */
+.dropbtn {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 36% 24%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(180deg, #fdf3f6 0%, #e4d2da 55%, #cbb3be 100%);
+  box-shadow:
+    0 0 0 12px rgba(255, 255, 255, 0.9),
+    0 0 0 22px rgba(110, 70, 90, 0.3),
+    0 22px 44px rgba(110, 65, 90, 0.4);
+  transition: transform 0.09s ease, filter 0.09s ease;
+}
+.dropbtn .ring {
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 7px 20px rgba(120, 75, 100, 0.25);
+}
+.dropbtn .glyph {
+  font-size: 74px;
+  color: var(--ctl-accent);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  line-height: 1;
+}
+.dropbtn.pressed,
+.dropbtn:active {
+  transform: scale(0.95);
+  filter: brightness(1.1);
+}
+
+.hints {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  font-size: 29px;
+  color: #6b4d58;
+  margin-top: 1%;
+}

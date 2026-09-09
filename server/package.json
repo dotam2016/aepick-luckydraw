@@ -1,0 +1,22 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --ignore \"**/node_modules/**\" --ignore \"**/data/**\" src/index.ts",
+    "start": "tsx src/index.ts",
+    "sim": "tsx src/tools/simulate.ts",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aepick/shared": "*",
+    "@fastify/cors": "^10.0.0",
+    "@fastify/static": "^8.0.0",
+    "fastify": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@aepick/spike-3d",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "비주얼 스파이크 — Three.js로 레퍼런스 룩에 도달 가능한지 확인. 게임 로직 없음.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.0",
+    "@react-three/postprocessing": "^2.16.0",
+    "n8ao": "^1.9.0",
+    "postprocessing": "^6.36.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.169.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^5.6.0",
+    "vite": "^5.4.0"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "attract.title": "LUCKY DRAW",
+  "attract.subtitle": "한 번의 선택, 하나의 행운",
+  "attract.staffNotice": "직원 확인 후 참여할 수 있어요",
+  "attract.blocked": "잠시만 기다려 주세요. 직원이 확인하고 있어요.",
+  "attract.eventClosed": "오늘 행사가 종료되었어요. 감사합니다!",
+
+  "tutorial.line1": "좌우로 움직여 위치를 정해 주세요",
+  "tutorial.line2": "그리고 CATCH를 눌러주세요",
+
+  "aim.guide": "좌우로 움직여 위치를 정해 주세요",
+  "aim.hurry": "서둘러 주세요!",
+  "aim.timeLeft": "남은 시간",
+  "aim.oncePerPlay": "1회 플레이",
+
+  "action.catch": "CATCH",
+
+  "result.winTitle": "YOU GOT IT!",
+  "result.winPrize": "{prize} 당첨",
+  "result.missTitle": "SO CLOSE!",
+  "result.missBody": "함께해 주셔서 고마워요",
+  "result.codeLabel": "경품 코드",
+  "result.showToStaff": "직원에게 이 코드를 보여주세요",
+  "result.testWatermark": "TEST",
+
+  "tier.t1": "1등",
+  "tier.t2": "2등",
+  "tier.t3": "3등",
+  "tier.t4": "4등",
+  "tier.t5": "5등",
+  "tier.miss": "아쉽지만 다음 기회에",
+
+  "error.generic": "잠시만 기다려 주세요. 직원이 확인하고 있어요.",
+  "error.network": "잠시만 기다려 주세요. 직원이 확인하고 있어요.",
+  "error.callStaff": "직원을 불러 주세요"
+}

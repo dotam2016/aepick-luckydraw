@@ -1,0 +1,36 @@
+{
+  "attract.title": "LUCKY DRAW",
+  "attract.subtitle": "Sáu lựa chọn, một vận may",
+  "attract.staffNotice": "Vui lòng nhờ nhân viên xác nhận để tham gia",
+  "attract.blocked": "Vui lòng chờ một chút. Nhân viên đang kiểm tra.",
+  "attract.eventClosed": "Sự kiện đã kết thúc hôm nay. Cảm ơn bạn!",
+
+  "tutorial.line1": "Di chuyển sang trái · phải để chọn vị trí",
+  "tutorial.line2": "Rồi nhấn CATCH",
+
+  "aim.guide": "Di chuyển sang trái phải để chọn vị trí",
+  "aim.hurry": "Nhanh lên!",
+  "aim.timeLeft": "Còn lại",
+  "aim.oncePerPlay": "1 lượt duy nhất",
+
+  "action.catch": "CATCH",
+
+  "result.winTitle": "YOU GOT IT!",
+  "result.winPrize": "Bạn đã trúng {prize}",
+  "result.missTitle": "SO CLOSE!",
+  "result.missBody": "Cảm ơn bạn đã tham gia",
+  "result.codeLabel": "Mã nhận quà",
+  "result.showToStaff": "Hãy cho nhân viên xem mã này",
+  "result.testWatermark": "TEST",
+
+  "tier.t1": "Giải Nhất",
+  "tier.t2": "Giải Nhì",
+  "tier.t3": "Giải Ba",
+  "tier.t4": "Giải Tư",
+  "tier.t5": "Giải Năm",
+  "tier.miss": "Chúc may mắn lần sau",
+
+  "error.generic": "Vui lòng chờ một chút. Nhân viên đang kiểm tra.",
+  "error.network": "Vui lòng chờ một chút. Nhân viên đang kiểm tra.",
+  "error.callStaff": "Vui lòng gọi nhân viên"
+}

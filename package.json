@@ -1,0 +1,33 @@
+{
+  "name": "aepick-lucky-draw",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AEPICK POP-UP Lucky Draw - Kiosk Claw Game",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "server"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "dev:server": "npm run dev -w server",
+    "dev:kiosk": "npm run dev -w @aepick/kiosk",
+    "sim": "npm run sim -w server",
+    "autoplay": "tsx tools/autoplay.mts",
+    "e2e": "node tools/e2e.mjs",
+    "build": "npm run build -w @aepick/kiosk && npm run build -w server",
+    "start": "npm run start -w server",
+    "tunnel": "node tools/tunnel.mjs"
+  },
+  "devDependencies": {
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0",
+    "puppeteer-core": "^25.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

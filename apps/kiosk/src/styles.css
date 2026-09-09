@@ -1,0 +1,922 @@
+/* AEPICK Lucky Draw — 키오스크 (1080×1920 설계, Safe Area 비례 대응) */
+
+:root {
+  /* Aepick 브랜드 토큰 — `Aepick 6core Value` 프로젝트 확정값 (단일 핑크 시스템) */
+  --ink: #26191e;
+  --ink-soft: #8a6076;
+  --brand: #f25c7c;
+  --brand-deep: #e8446b;
+  --brand-soft: #fbd7e0;
+  --gold: #e8b84b;
+  --paper: #fdf2f5;
+  --paper-2: #fae2e9;
+  --panel: rgba(255, 255, 255, 0.92);
+  --shadow: 0 18px 48px rgba(150, 70, 105, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #1a0f16;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+  color: var(--ink);
+  user-select: none;
+  touch-action: manipulation;
+}
+
+#root {
+  height: 100%;
+}
+
+/* 설계 좌표계를 뷰포트에 맞춰 스케일 — 실기기 종횡비 대응 (§1.2) */
+.viewport {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #1a0f16;
+}
+
+/* 1080×1920 설계 박스를 뷰포트 중앙에 놓고 비례 축소한다.
+   grid+place-items는 축소 전 박스 크기로 레이아웃되어 오버플로 시 중앙 정렬이 깨진다. */
+.stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1080px;
+  height: 1920px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+/* 3D 게임 필드 — 상단 1344px. 조작부가 하단 576px를 차지한다. */
+.field {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1080px;
+  height: 1344px;
+  overflow: hidden;
+}
+.field canvas {
+  display: block;
+  width: 1080px !important;
+  height: 1344px !important;
+}
+
+/* ---------- 공통 ---------- */
+
+.center-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.btn {
+  border: 0;
+  border-radius: 999px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+.btn:active {
+  transform: scale(0.965);
+}
+.btn:disabled {
+  filter: grayscale(0.5) opacity(0.5);
+  cursor: default;
+}
+
+/* ---------- 대기화면 W-00 ---------- */
+
+.attract-video {
+  position: absolute;
+  inset: 0;
+  width: 1080px;
+  height: 1920px;
+  object-fit: cover;
+}
+.attract-fallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+}
+
+.attract-brand {
+  position: absolute;
+  top: 62px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 5;
+}
+.attract-logo {
+  font-size: 36px;
+  letter-spacing: 14px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.attract-title {
+  font-size: 108px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  margin: 2px 0 0;
+  background: linear-gradient(180deg, #ff7ba3 0%, #c33a63 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.attract-sub {
+  font-size: 34px;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+
+.attract-notice {
+  position: absolute;
+  bottom: 210px;
+  left: 60px;
+  right: 60px;
+  padding: 44px 40px;
+  border-radius: 36px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  text-align: center;
+  font-size: 44px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.attract-notice small {
+  display: block;
+  font-size: 30px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  margin-top: 14px;
+}
+
+.prize-strip {
+  position: absolute;
+  bottom: 96px;
+  left: 60px;
+  right: 60px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.prize-chip {
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  font-size: 26px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* 숨김 핫스팟 — 운영자 진입 (§6.1) */
+.hotspot {
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  z-index: 30;
+}
+.hotspot.tl {
+  top: 0;
+  left: 0;
+}
+
+.locale-switch {
+  position: absolute;
+  top: 44px;
+  right: 44px;
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+}
+.locale-switch button {
+  width: 76px;
+  height: 56px;
+  border-radius: 14px;
+  border: 2px solid rgba(200, 150, 175, 0.4);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.locale-switch button.on {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+/* ---------- HUD ---------- */
+
+.hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 56px;
+  z-index: 10;
+  pointer-events: none;
+}
+.badge-once {
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--brand-deep);
+}
+.timer {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.timer .num {
+  font-size: 84px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  line-height: 1;
+}
+.timer.hurry .num {
+  color: var(--brand);
+}
+.timer .unit {
+  font-size: 30px;
+  color: var(--ink-soft);
+}
+
+.timer-bar {
+  position: absolute;
+  top: 196px;
+  left: 56px;
+  right: 56px;
+  height: 10px;
+  border-radius: 99px;
+  background: rgba(200, 150, 175, 0.25);
+  overflow: hidden;
+  z-index: 10;
+}
+.timer-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ff9dbb, #e8567f);
+  transition: width 0.1s linear;
+}
+.timer-bar.hurry i {
+  background: linear-gradient(90deg, #ff6f6f, #e02020);
+}
+
+/* ---------- 조작부 ---------- */
+
+.controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 390px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 56px;
+}
+
+.guide-text {
+  font-size: 34px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  margin-bottom: 18px;
+  height: 42px;
+}
+
+/* 좌우 드래그 바 — 터치 영역 높이 최소 120dp (§6.2) */
+.drag-bar {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  border-radius: 75px;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 3px 12px rgba(150, 70, 105, 0.12);
+  touch-action: none;
+}
+.drag-bar .knob {
+  position: absolute;
+  top: 15px;
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  background: linear-gradient(180deg, #ff9dbb, #e8567f);
+  box-shadow: 0 8px 20px rgba(200, 60, 100, 0.35);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 40px;
+  transform: translateX(-60px);
+  pointer-events: none;
+}
+.drag-bar.locked {
+  filter: grayscale(0.6) opacity(0.55);
+}
+
+.btn-catch {
+  margin-top: 22px;
+  width: 460px;
+  height: 148px;
+  font-size: 62px;
+  letter-spacing: 6px;
+  color: #fff;
+  background: linear-gradient(180deg, #ff6f97 0%, #d43263 100%);
+  box-shadow: 0 14px 34px rgba(200, 50, 95, 0.4);
+}
+.btn-catch.pressed {
+  background: linear-gradient(180deg, #d43263 0%, #a82048 100%);
+}
+
+/* 좌·우 홀드 영역 (보조 입력) */
+.hold-zone {
+  position: absolute;
+  top: 240px;
+  width: 150px;
+  height: 1180px;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  font-size: 60px;
+  color: rgba(140, 90, 115, 0.22);
+}
+.hold-zone.l {
+  left: 0;
+}
+.hold-zone.r {
+  right: 0;
+}
+.hold-zone.active {
+  background: rgba(232, 86, 127, 0.08);
+}
+
+/* ---------- 튜토리얼 오버레이 ---------- */
+
+.tutorial {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: rgba(40, 15, 28, 0.55);
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(3px);
+}
+.tutorial-card {
+  width: 820px;
+  padding: 70px 60px;
+  border-radius: 44px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.tutorial-card .step {
+  font-size: 46px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 20px;
+}
+.tutorial-card .step:last-of-type {
+  margin-bottom: 0;
+  color: var(--brand-deep);
+}
+.tutorial-dots {
+  margin-top: 42px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+.tutorial-dots i {
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: rgba(200, 150, 175, 0.35);
+}
+.tutorial-dots i.on {
+  background: var(--brand);
+}
+
+/* ---------- 결과화면 R-00 ---------- */
+
+.result {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 60px;
+  text-align: center;
+}
+.result.win {
+  background: radial-gradient(circle at 50% 34%, #fff6da 0%, #ffe3ee 46%, #f7d3e4 100%);
+}
+.result.miss {
+  background: radial-gradient(circle at 50% 40%, #f4f6fb 0%, #eae9f4 100%);
+}
+
+.result-title {
+  font-size: 118px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin: 0;
+  line-height: 1.05;
+}
+.result.win .result-title {
+  background: linear-gradient(180deg, #ffb43c 0%, #e0682c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.result.miss .result-title {
+  color: #6e7590;
+}
+
+.tier-pill {
+  margin-top: 28px;
+  padding: 16px 44px;
+  border-radius: 999px;
+  font-size: 40px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--brand-deep);
+}
+
+.prize-box {
+  margin-top: 46px;
+  width: 100%;
+  max-width: 860px;
+  padding: 54px 46px;
+  border-radius: 44px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+}
+.prize-visual {
+  width: 260px;
+  height: 260px;
+  margin: 0 auto 30px;
+  border-radius: 36px;
+  background: linear-gradient(150deg, #ffd9e6, #ffb7cf);
+  display: grid;
+  place-items: center;
+  font-size: 120px;
+}
+.prize-name {
+  font-size: 62px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.code-box {
+  margin-top: 42px;
+  padding: 34px 40px 40px;
+  border-radius: 36px;
+  background: #2c1622;
+  color: #fff;
+  width: 100%;
+  max-width: 860px;
+}
+.code-box .label {
+  font-size: 28px;
+  opacity: 0.75;
+  letter-spacing: 2px;
+}
+.code-box .code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 130px;
+  font-weight: 800;
+  letter-spacing: 16px;
+  line-height: 1.15;
+  margin-top: 6px;
+}
+.code-box .hint {
+  font-size: 28px;
+  opacity: 0.8;
+  margin-top: 10px;
+}
+
+.result-miss-body {
+  font-size: 46px;
+  color: #6e7590;
+  margin-top: 30px;
+}
+
+.result-progress {
+  position: absolute;
+  bottom: 78px;
+  left: 60px;
+  right: 60px;
+  height: 10px;
+  border-radius: 99px;
+  background: rgba(120, 90, 110, 0.18);
+  overflow: hidden;
+}
+.result-progress i {
+  display: block;
+  height: 100%;
+  background: rgba(120, 90, 110, 0.5);
+}
+
+.test-watermark {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 14px 40px;
+  border-radius: 999px;
+  background: #2c1622;
+  color: #ffd166;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  z-index: 60;
+}
+
+/* 컨페티 */
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.confetti i {
+  position: absolute;
+  width: 18px;
+  height: 30px;
+  border-radius: 4px;
+  animation: fall linear forwards;
+}
+@keyframes fall {
+  from {
+    transform: translateY(-60px) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(2000px) rotate(720deg);
+    opacity: 0.9;
+  }
+}
+
+/* ---------- 운영자 패널 ---------- */
+
+.op-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(24, 10, 18, 0.82);
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(6px);
+}
+.op-card {
+  width: 860px;
+  padding: 56px 52px;
+  border-radius: 40px;
+  background: #1e1620;
+  color: #f2e6ee;
+  box-shadow: var(--shadow);
+}
+.op-card h2 {
+  margin: 0 0 8px;
+  font-size: 44px;
+}
+.op-card .sub {
+  font-size: 26px;
+  opacity: 0.6;
+  margin-bottom: 34px;
+}
+.pin-display {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+.pin-display i {
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.pin-display i.on {
+  background: var(--brand);
+}
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.keypad button {
+  height: 108px;
+  border-radius: 22px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 44px;
+  font-weight: 700;
+  font-family: inherit;
+}
+.keypad button:active {
+  background: rgba(255, 255, 255, 0.22);
+}
+.op-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 10px;
+}
+.op-actions .btn {
+  height: 116px;
+  font-size: 38px;
+  border-radius: 24px;
+}
+.op-actions .primary {
+  background: linear-gradient(180deg, #ff6f97, #d43263);
+  color: #fff;
+}
+.op-actions .ghost {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f2e6ee;
+}
+.op-actions .warn {
+  background: #8a3040;
+  color: #fff;
+}
+.op-error {
+  margin-top: 20px;
+  padding: 20px 24px;
+  border-radius: 18px;
+  background: rgba(232, 86, 79, 0.18);
+  color: #ff9c96;
+  font-size: 26px;
+  line-height: 1.5;
+}
+.op-status {
+  margin-top: 24px;
+  font-size: 24px;
+  opacity: 0.6;
+  line-height: 1.7;
+}
+.op-status b {
+  opacity: 1;
+  color: #ffd166;
+}
+
+/* 등급 강제 지정 (테스트 모드) */
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+.tier-grid button {
+  height: 88px;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  background: transparent;
+  color: #f2e6ee;
+  font-size: 28px;
+  font-weight: 700;
+  font-family: inherit;
+}
+.tier-grid button.on {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+/* ---------- 오류 / HOLD ---------- */
+
+.hold {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  background: linear-gradient(180deg, #fdf3f7, #f2e2ea);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 70px;
+  text-align: center;
+}
+.hold .icon {
+  font-size: 150px;
+  margin-bottom: 40px;
+}
+.hold .msg {
+  font-size: 58px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+}
+.hold .code {
+  margin-top: 34px;
+  font-size: 26px;
+  color: var(--ink-soft);
+  font-family: ui-monospace, monospace;
+}
+
+/* ---------- 디버그 HUD (§15.3) ---------- */
+
+.debug {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 200;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(10, 5, 10, 0.82);
+  color: #8fe8a9;
+  font-family: ui-monospace, monospace;
+  font-size: 20px;
+  line-height: 1.55;
+  pointer-events: none;
+  white-space: pre;
+}
+.debug .bad {
+  color: #ff8f8f;
+}
+.debug .warn {
+  color: #ffd166;
+}
+
+/* ---------------- 조작부 (하단 576px, 레퍼런스 컨트롤러 스타일) ---------------- */
+
+.controller {
+  position: absolute;
+  top: 1344px;
+  left: 0;
+  width: 1080px;
+  height: 576px;
+  padding: 30px 44px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 12;
+  background:
+    radial-gradient(120% 70% at 30% 0%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(168deg, #fdf2f5 0%, #f0dbe2 38%, #fbeef2 62%, #e8d0d9 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 -14px 40px rgba(120, 70, 95, 0.16) inset;
+  overflow: hidden;
+}
+
+.controller .deco {
+  position: absolute;
+  font-size: 42px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 6px rgba(150, 100, 125, 0.4);
+  pointer-events: none;
+}
+.controller .d1 { top: 11%; left: 7%; }
+.controller .d2 { top: 7%; left: 32%; color: var(--brand); }
+.controller .d3 { top: 9%; right: 9%; }
+.controller .d4 { bottom: 13%; left: 5%; }
+
+.ctl-timer {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 54px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 1px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  font-variant-numeric: tabular-nums;
+}
+.ctl-timer.hurry {
+  color: var(--brand-deep);
+}
+
+.ctl-timerbar {
+  width: 420px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(190, 150, 165, 0.3);
+  overflow: hidden;
+  margin-top: 8px;
+}
+.ctl-timerbar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ff9dbb, var(--brand));
+  transition: width 0.1s linear;
+}
+.ctl-timerbar.hurry i {
+  background: linear-gradient(90deg, #ff6f8f, var(--brand-deep));
+}
+
+.ctl-row {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.dpad {
+  display: flex;
+  gap: 18px;
+}
+
+.pad {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 46%),
+    linear-gradient(180deg, #fbe9ef 0%, var(--brand) 74%);
+  box-shadow:
+    0 0 0 9px rgba(255, 255, 255, 0.85),
+    0 0 0 16px rgba(120, 75, 95, 0.26),
+    0 15px 30px rgba(120, 70, 95, 0.32);
+  transition: transform 0.09s ease, filter 0.09s ease;
+}
+.pad .glyph {
+  font-size: 52px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(90, 40, 60, 0.45);
+  line-height: 1;
+}
+.pad.on,
+.pad:active {
+  transform: scale(0.94);
+  filter: brightness(1.18);
+}
+.pad:disabled {
+  filter: grayscale(0.55) opacity(0.5);
+  cursor: default;
+}
+
+.dropbtn {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  border: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 36% 24%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(180deg, #fdf3f6 0%, #eddae1 55%, #d8bcc6 100%);
+  box-shadow:
+    0 0 0 12px rgba(255, 255, 255, 0.9),
+    0 0 0 22px rgba(110, 70, 90, 0.28),
+    0 22px 44px rgba(110, 65, 90, 0.36);
+  transition: transform 0.09s ease, filter 0.09s ease;
+}
+.dropbtn .ring {
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  border: 6px solid rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 7px 20px rgba(120, 75, 100, 0.22);
+}
+.dropbtn .glyph {
+  font-size: 74px;
+  color: var(--brand);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  line-height: 1;
+}
+.dropbtn.pressed,
+.dropbtn:active {
+  transform: scale(0.95);
+  filter: brightness(1.1);
+}
+.dropbtn:disabled {
+  filter: grayscale(0.5) opacity(0.5);
+  cursor: default;
+}
+
+.ctl-hints {
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  font-size: 29px;
+  color: var(--ink-soft);
+}

@@ -1,0 +1,24 @@
+// vite.config.ts
+import { defineConfig } from "file:///D:/Dropbox/00_Agents%20Pjt/Aepick%20Lucky%20Draw/node_modules/vite/dist/node/index.js";
+import react from "file:///D:/Dropbox/00_Agents%20Pjt/Aepick%20Lucky%20Draw/node_modules/@vitejs/plugin-react/dist/index.js";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+var vite_config_default = defineConfig({
+  plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? "0.1.0")
+  },
+  server: {
+    port: 5174,
+    proxy: {
+      "/api": { target: "http://localhost:8788", changeOrigin: true }
+    }
+  },
+  build: { outDir: "dist", assetsDir: "assets" },
+  // 프로젝트가 Dropbox 안에 있어 동기화가 .vite를 잠그고 EBUSY를 낸다
+  cacheDir: join(tmpdir(), "aepick-kiosk-vite")
+});
+export {
+  vite_config_default as default
+};
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAic291cmNlcyI6IFsidml0ZS5jb25maWcudHMiXSwKICAic291cmNlc0NvbnRlbnQiOiBbImNvbnN0IF9fdml0ZV9pbmplY3RlZF9vcmlnaW5hbF9kaXJuYW1lID0gXCJEOlxcXFxEcm9wYm94XFxcXDAwX0FnZW50cyBQanRcXFxcQWVwaWNrIEx1Y2t5IERyYXdcXFxcYXBwc1xcXFxraW9za1wiO2NvbnN0IF9fdml0ZV9pbmplY3RlZF9vcmlnaW5hbF9maWxlbmFtZSA9IFwiRDpcXFxcRHJvcGJveFxcXFwwMF9BZ2VudHMgUGp0XFxcXEFlcGljayBMdWNreSBEcmF3XFxcXGFwcHNcXFxca2lvc2tcXFxcdml0ZS5jb25maWcudHNcIjtjb25zdCBfX3ZpdGVfaW5qZWN0ZWRfb3JpZ2luYWxfaW1wb3J0X21ldGFfdXJsID0gXCJmaWxlOi8vL0Q6L0Ryb3Bib3gvMDBfQWdlbnRzJTIwUGp0L0FlcGljayUyMEx1Y2t5JTIwRHJhdy9hcHBzL2tpb3NrL3ZpdGUuY29uZmlnLnRzXCI7aW1wb3J0IHsgZGVmaW5lQ29uZmlnIH0gZnJvbSAndml0ZSc7XG5pbXBvcnQgcmVhY3QgZnJvbSAnQHZpdGVqcy9wbHVnaW4tcmVhY3QnO1xuaW1wb3J0IHsgdG1wZGlyIH0gZnJvbSAnbm9kZTpvcyc7XG5pbXBvcnQgeyBqb2luIH0gZnJvbSAnbm9kZTpwYXRoJztcblxuZXhwb3J0IGRlZmF1bHQgZGVmaW5lQ29uZmlnKHtcbiAgcGx1Z2luczogW3JlYWN0KCldLFxuICBkZWZpbmU6IHtcbiAgICBfX0FQUF9WRVJTSU9OX186IEpTT04uc3RyaW5naWZ5KHByb2Nlc3MuZW52Lm5wbV9wYWNrYWdlX3ZlcnNpb24gPz8gJzAuMS4wJyksXG4gIH0sXG4gIHNlcnZlcjoge1xuICAgIHBvcnQ6IDUxNzQsXG4gICAgcHJveHk6IHtcbiAgICAgICcvYXBpJzogeyB0YXJnZXQ6ICdodHRwOi8vbG9jYWxob3N0Ojg3ODgnLCBjaGFuZ2VPcmlnaW46IHRydWUgfSxcbiAgICB9LFxuICB9LFxuICBidWlsZDogeyBvdXREaXI6ICdkaXN0JywgYXNzZXRzRGlyOiAnYXNzZXRzJyB9LFxuICAvLyBcdUQ1MDRcdUI4NUNcdUM4MURcdUQyQjhcdUFDMDAgRHJvcGJveCBcdUM1NDhcdUM1RDAgXHVDNzg4XHVDNUI0IFx1QjNEOVx1QUUzMFx1RDY1NFx1QUMwMCAudml0ZVx1Qjk3QyBcdUM3QTBcdUFERjhcdUFDRTAgRUJVU1lcdUI5N0MgXHVCMEI4XHVCMkU0XG4gIGNhY2hlRGlyOiBqb2luKHRtcGRpcigpLCAnYWVwaWNrLWtpb3NrLXZpdGUnKSxcbn0pO1xuIl0sCiAgIm1hcHBpbmdzIjogIjtBQUFtVyxTQUFTLG9CQUFvQjtBQUNoWSxPQUFPLFdBQVc7QUFDbEIsU0FBUyxjQUFjO0FBQ3ZCLFNBQVMsWUFBWTtBQUVyQixJQUFPLHNCQUFRLGFBQWE7QUFBQSxFQUMxQixTQUFTLENBQUMsTUFBTSxDQUFDO0FBQUEsRUFDakIsUUFBUTtBQUFBLElBQ04saUJBQWlCLEtBQUssVUFBVSxRQUFRLElBQUksdUJBQXVCLE9BQU87QUFBQSxFQUM1RTtBQUFBLEVBQ0EsUUFBUTtBQUFBLElBQ04sTUFBTTtBQUFBLElBQ04sT0FBTztBQUFBLE1BQ0wsUUFBUSxFQUFFLFFBQVEseUJBQXlCLGNBQWMsS0FBSztBQUFBLElBQ2hFO0FBQUEsRUFDRjtBQUFBLEVBQ0EsT0FBTyxFQUFFLFFBQVEsUUFBUSxXQUFXLFNBQVM7QUFBQTtBQUFBLEVBRTdDLFVBQVUsS0FBSyxPQUFPLEdBQUcsbUJBQW1CO0FBQzlDLENBQUM7IiwKICAibmFtZXMiOiBbXQp9Cg==
