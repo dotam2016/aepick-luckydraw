@@ -3,6 +3,7 @@
  */
 
 import type { FastifyInstance } from 'fastify';
+import ExcelJS from 'exceljs';
 import {
   ALL_TIERS,
   WIN_TIERS,
@@ -418,6 +419,155 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       .header('content-type', 'text/csv; charset=utf-8')
       .header('content-disposition', 'attachment; filename="luckydraw-sessions.csv"')
       .send('﻿' + csv);
+  });
+
+  app.get('/api/admin/report.xlsx', async (req, reply) => {
+    if (!requireOperator(req, reply)) return;
+
+    const sessionRows = db
+      .prepare(
+        `SELECT s.session_id, s.created_at, s.played_at, s.device_id, s.operator_id, s.is_test,
+                s.status, s.rule_version, d.result_tier, c.claim_code, c.claimed_at, c.claimed_by,
+                c.void_reason, m.aim_duration_ms, m.auto_catch, m.min_fps
+         FROM sessions s
+         LEFT JOIN draws d USING(session_id)
+         LEFT JOIN claims c USING(session_id)
+         LEFT JOIN play_metrics m USING(session_id)
+         ORDER BY s.created_at DESC LIMIT 20000`,
+      )
+      .all() as Record<string, unknown>[];
+
+    const auditRows = db
+      .prepare('SELECT at, actor, action, target, reason, before, after FROM audit_log ORDER BY id DESC LIMIT 2000')
+      .all() as Record<string, unknown>[];
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'AEPICK Lucky Draw Admin';
+    workbook.created = new Date();
+
+    const styleHeader = (row: ExcelJS.Row) => {
+      row.font = { bold: true };
+      row.alignment = { vertical: 'middle' };
+      row.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8EDF6' } };
+      });
+    };
+
+    const toDate = (v: unknown) => (typeof v === 'string' && v ? new Date(v) : null);
+    const toBool = (v: unknown) => (v === 1 || v === true ? 'Y' : v === 0 || v === false ? '' : (v as string) ?? '');
+
+    // ---------- Sheet 1: Sessions ----------
+    const sessionSheet = workbook.addWorksheet('Sessions');
+    sessionSheet.columns = [
+      { header: 'Session ID', key: 'session_id', width: 24 },
+      { header: 'Created At', key: 'created_at', width: 20, style: { numFmt: 'yyyy-mm-dd hh:mm:ss' } },
+      { header: 'Played At', key: 'played_at', width: 20, style: { numFmt: 'yyyy-mm-dd hh:mm:ss' } },
+      { header: 'Device ID', key: 'device_id', width: 16 },
+      { header: 'Operator ID', key: 'operator_id', width: 14 },
+      { header: 'Test', key: 'is_test', width: 8 },
+      { header: 'Status', key: 'status', width: 16 },
+      { header: 'Rule Version', key: 'rule_version', width: 12 },
+      { header: 'Result Tier', key: 'result_tier', width: 12 },
+      { header: 'Claim Code', key: 'claim_code', width: 14 },
+      { header: 'Claimed At', key: 'claimed_at', width: 20, style: { numFmt: 'yyyy-mm-dd hh:mm:ss' } },
+      { header: 'Claimed By', key: 'claimed_by', width: 14 },
+      { header: 'Void Reason', key: 'void_reason', width: 20 },
+      { header: 'Aim Duration (ms)', key: 'aim_duration_ms', width: 16 },
+      { header: 'Auto Catch', key: 'auto_catch', width: 12 },
+      { header: 'Min FPS', key: 'min_fps', width: 10 },
+    ];
+    styleHeader(sessionSheet.getRow(1));
+    for (const r of sessionRows) {
+      sessionSheet.addRow({
+        session_id: r.session_id,
+        created_at: toDate(r.created_at),
+        played_at: toDate(r.played_at),
+        device_id: r.device_id,
+        operator_id: r.operator_id,
+        is_test: toBool(r.is_test),
+        status: r.status,
+        rule_version: r.rule_version,
+        result_tier: r.result_tier ?? '',
+        claim_code: r.claim_code ?? '',
+        claimed_at: toDate(r.claimed_at),
+        claimed_by: r.claimed_by ?? '',
+        void_reason: r.void_reason ?? '',
+        aim_duration_ms: r.aim_duration_ms ?? '',
+        auto_catch: toBool(r.auto_catch),
+        min_fps: r.min_fps ?? '',
+      });
+    }
+    sessionSheet.views = [{ state: 'frozen', ySplit: 1 }];
+    sessionSheet.autoFilter = { from: 'A1', to: 'P1' };
+
+    // ---------- Sheet 2: Prizes (Kho) ----------
+    const prizeSheet = workbook.addWorksheet('Prizes');
+    prizeSheet.columns = [
+      { header: 'Tier', key: 'tier', width: 10 },
+      { header: 'Name (VI)', key: 'name_vi', width: 22 },
+      { header: 'Name (KO)', key: 'name_ko', width: 22 },
+      { header: 'Name (EN)', key: 'name_en', width: 22 },
+      { header: 'Total Qty', key: 'total_qty', width: 12 },
+      { header: 'Remaining Qty', key: 'remaining_qty', width: 14 },
+      { header: 'Reserved Qty', key: 'reserved_qty', width: 14 },
+      { header: 'Claimed Qty', key: 'claimed_qty', width: 14 },
+      { header: 'Daily Cap', key: 'daily_cap', width: 12 },
+      { header: 'Event Cap', key: 'event_cap', width: 12 },
+      { header: 'Active', key: 'active', width: 10 },
+    ];
+    styleHeader(prizeSheet.getRow(1));
+    for (const p of listPrizes()) {
+      prizeSheet.addRow({
+        tier: p.tier,
+        name_vi: p.name.vi ?? '',
+        name_ko: p.name.ko ?? '',
+        name_en: p.name.en ?? '',
+        total_qty: p.totalQty,
+        remaining_qty: p.remainingQty,
+        reserved_qty: p.reservedQty,
+        claimed_qty: p.claimedQty,
+        daily_cap: p.dailyCap ?? '',
+        event_cap: p.eventCap ?? '',
+        active: p.active ? 'Y' : '',
+      });
+    }
+    prizeSheet.views = [{ state: 'frozen', ySplit: 1 }];
+    prizeSheet.autoFilter = { from: 'A1', to: 'K1' };
+
+    // ---------- Sheet 3: Audit Log ----------
+    const auditSheet = workbook.addWorksheet('Audit Log');
+    auditSheet.columns = [
+      { header: 'At', key: 'at', width: 20, style: { numFmt: 'yyyy-mm-dd hh:mm:ss' } },
+      { header: 'Actor', key: 'actor', width: 14 },
+      { header: 'Action', key: 'action', width: 18 },
+      { header: 'Target', key: 'target', width: 16 },
+      { header: 'Reason', key: 'reason', width: 30 },
+      { header: 'Before', key: 'before', width: 40 },
+      { header: 'After', key: 'after', width: 40 },
+    ];
+    styleHeader(auditSheet.getRow(1));
+    for (const a of auditRows) {
+      auditSheet.addRow({
+        at: toDate(a.at),
+        actor: a.actor,
+        action: a.action,
+        target: a.target ?? '',
+        reason: a.reason ?? '',
+        before: a.before ?? '',
+        after: a.after ?? '',
+      });
+    }
+    auditSheet.views = [{ state: 'frozen', ySplit: 1 }];
+    auditSheet.autoFilter = { from: 'A1', to: 'G1' };
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return reply
+      .header(
+        'content-type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      )
+      .header('content-disposition', 'attachment; filename="luckydraw-report.xlsx"')
+      .send(Buffer.from(buffer));
   });
 
   app.get('/api/admin/audit', async (req, reply) => {

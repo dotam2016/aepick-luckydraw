@@ -205,6 +205,7 @@ const PAGE = HTML`<!doctype html>
       <label class="dev"><input type="checkbox" id="incTest" style="width:auto"> 테스트 세션 포함</label>
       <button class="act ghost" onclick="loadSessions()">조회</button>
       <button class="act ghost" onclick="downloadCsv()">CSV 내보내기</button>
+      <button class="act ghost" onclick="downloadXlsx()">Excel 내보내기</button>
     </div>
     <div class="wrap">
       <h2>세션 로그</h2>
@@ -483,6 +484,12 @@ function downloadCsv(){
   fetch('/api/admin/report.csv',{headers:headers()}).then(r=>r.blob()).then(b=>{
     const a=document.createElement('a'); a.href=URL.createObjectURL(b);
     a.download='luckydraw-sessions.csv'; a.click();
+  });
+}
+function downloadXlsx(){
+  fetch('/api/admin/report.xlsx',{headers:headers()}).then(r=>r.blob()).then(b=>{
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='luckydraw-report.xlsx'; a.click();
   });
 }
 async function loadAudit(){
