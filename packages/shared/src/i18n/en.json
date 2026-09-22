@@ -6,9 +6,9 @@
   "attract.eventClosed": "Today's event has ended. Thank you!",
 
   "tutorial.line1": "Move left and right to aim",
-  "tutorial.line2": "Then press CATCH",
+  "tutorial.line2": "Press CATCH to grab",
 
-  "aim.guide": "Move left and right to aim",
+  "aim.guide": "Move left/right to aim",
   "aim.hurry": "Hurry!",
   "aim.timeLeft": "Time left",
   "aim.oncePerPlay": "1 play only",
@@ -32,5 +32,15 @@
 
   "error.generic": "Please wait a moment. Our staff is checking.",
   "error.network": "Please wait a moment. Our staff is checking.",
-  "error.callStaff": "Please call our staff"
+  "error.callStaff": "Please call our staff",
+
+  "operator.confirmTitle": "Confirm access",
+  "operator.pinPrompt": "Enter the {len}-digit PIN",
+  "operator.close": "Close",
+  "operator.approveTitle": "Confirm play",
+  "operator.approveSub": "Please verify eligibility before confirming.",
+  "operator.startPlay": "Start play",
+  "operator.approving": "Confirming…",
+  "operator.testSessionOpen": "Open test session",
+  "operator.testSessionCollapse": "Collapse test session"
 }

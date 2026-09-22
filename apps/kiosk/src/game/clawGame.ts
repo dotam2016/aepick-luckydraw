@@ -18,7 +18,7 @@
 
 import type RAPIER_NS from '@dimforge/rapier3d-compat';
 import { MOTION_TIMING, SPEED_PRESETS, type RevealMode, type SpeedPreset } from '@aepick/shared';
-import { MATERIAL, WORLD, pickColorIndex, type BallKind } from './layout';
+import { WORLD, pickColorIndex } from './layout';
 import { CLAW_RIG, grabAnchorY, prongPose, tiltFromOpen } from './clawRig';
 
 type Rapier = typeof RAPIER_NS;
@@ -138,26 +138,20 @@ function quatFromUpTo(dx: number, dy: number, dz: number): Quat {
 export interface BallMeta {
   handle: number;
   colorIndex: number;
-  kind: BallKind;
-  isMetal: boolean;
-  hasDecal: boolean;
-  /** 데칼 배치 변형. 전 구슬이 같은 배치면 더미에서 반복이 눈에 띈다 */
-  decalVariant: number;
   radius: number;
+  /** 하트가 화면을 향한 채(billboard) 화면 평면에서 도는 고정 각도(rad) — 더미가 로봇처럼 똑같아 보이지 않게 */
+  spinZ: number;
 }
 
 export interface BallView {
   x: number;
   y: number;
   z: number;
-  /** 쿼터니언 */
+  /** 물리 쿼터니언(콜라이더 회전) — 시각 메시는 더 이상 이걸 쓰지 않는다, Scene.tsx 참고 */
   q: [number, number, number, number];
   r: number;
   colorIndex: number;
-  kind: BallKind;
-  isMetal: boolean;
-  hasDecal: boolean;
-  decalVariant: number;
+  spinZ: number;
   grabbed: boolean;
 }
 
@@ -517,17 +511,6 @@ export class ClawGame {
       const row = Math.floor(idx / cols);
       // 층마다 반 칸 엇갈리게 놓아 자연스럽게 쌓이도록 한다
       const stagger = layer % 2 === 0 ? 0 : spacing * 0.5;
-      const isMetal = rng() < MATERIAL.metalRatio;
-      const kindRoll = rng();
-      const kind: BallKind = isMetal
-        ? kindRoll < 0.55
-          ? 'ribbed'
-          : kindRoll < 0.85
-            ? 'coiled'
-            : 'smooth'
-        : kindRoll < 0.12
-          ? 'ribbed'
-          : 'smooth';
       const radius = r * (0.94 + rng() * 0.12);
 
       // 위에서 떨어뜨려 자연스러운 더미를 만든다
@@ -562,11 +545,8 @@ export class ClawGame {
       this.meta.set(body.handle, {
         handle: body.handle,
         colorIndex: pickColorIndex(rng()),
-        kind,
-        isMetal,
-        hasDecal: !isMetal && rng() < MATERIAL.decalRatio,
-        decalVariant: Math.floor(rng() * 4),
         radius,
+        spinZ: rng() * Math.PI * 2,
       });
       this.balls.push(body);
     }
@@ -1104,10 +1084,7 @@ export class ClawGame {
         q: [q.x, q.y, q.z, q.w],
         r: m.radius,
         colorIndex: m.colorIndex,
-        kind: m.kind,
-        isMetal: m.isMetal,
-        hasDecal: m.hasDecal,
-        decalVariant: m.decalVariant,
+        spinZ: m.spinZ,
         grabbed: this.grabbedBall === b,
       };
     });

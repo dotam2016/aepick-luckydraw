@@ -5,7 +5,7 @@
   "attract.blocked": "잠시만 기다려 주세요. 직원이 확인하고 있어요.",
   "attract.eventClosed": "오늘 행사가 종료되었어요. 감사합니다!",
 
-  "tutorial.line1": "좌우로 움직여 위치를 정해 주세요",
+  "tutorial.line1": "좌우로 움직여\n위치를 정해 주세요",
   "tutorial.line2": "그리고 CATCH를 눌러주세요",
 
   "aim.guide": "좌우로 움직여 위치를 정해 주세요",
@@ -32,5 +32,15 @@
 
   "error.generic": "잠시만 기다려 주세요. 직원이 확인하고 있어요.",
   "error.network": "잠시만 기다려 주세요. 직원이 확인하고 있어요.",
-  "error.callStaff": "직원을 불러 주세요"
+  "error.callStaff": "직원을 불러 주세요",
+
+  "operator.confirmTitle": "운영자 확인",
+  "operator.pinPrompt": "PIN {len}자리를 입력하세요",
+  "operator.close": "닫기",
+  "operator.approveTitle": "1회 플레이 승인",
+  "operator.approveSub": "참여 자격을 확인한 뒤 승인하세요",
+  "operator.startPlay": "1회 플레이 시작",
+  "operator.approving": "승인 중…",
+  "operator.testSessionOpen": "테스트 세션 열기",
+  "operator.testSessionCollapse": "테스트 세션 접기"
 }

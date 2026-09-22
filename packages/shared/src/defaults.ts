@@ -32,8 +32,10 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   resultSecondsMiss: 5,
   // §4.3 — 2주차 A/B 검증 후 확정. 기본값은 물리 불일치 리스크가 낮은 B안.
   revealMode: 'capsuleOpen',
-  // PC 타깃으로 확정되어 상향. 레퍼런스 밀도에 맞춘 값(비주얼 스파이크 확정).
-  ballCount: 78,
+  // 구슬을 하트 모양으로 바꾸며 반지름을 2배로 키웠다(apps/kiosk/src/game/layout.ts
+  // WORLD.ballRadius) — 부피가 8배라 이전 밀도(78)를 유지하면 더미가 상자를
+  // 넘친다. validateGameConfig가 허용하는 최소값(25)으로 낮췄다.
+  ballCount: 25,
   bgmVolume: 0.5,
   sfxVolume: 0.8,
   effectQuality: 'auto',

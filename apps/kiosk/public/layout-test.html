@@ -1,0 +1,810 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>AEPICK — bàn chỉnh bố cục 2D</title>
+<style>
+  /* Quicksand — font tròn, nhúng sẵn để kiosk chạy được cả khi offline.
+     Hai subset: latin + vietnamese (dấu tiếng Việt nằm ở subset riêng). */
+  @font-face{
+    font-family:'Quicksand';font-style:normal;font-weight:400 700;font-display:swap;
+    src:url(assets/fonts/quicksand-vietnamese.woff2) format('woff2');
+    unicode-range:U+0102-0103,U+0110-0111,U+0128-0129,U+0168-0169,U+01A0-01A1,
+      U+01AF-01B0,U+0300-0301,U+0303-0304,U+0308-0309,U+0323,U+0329,U+1EA0-1EF9,U+20AB;
+  }
+  @font-face{
+    font-family:'Quicksand';font-style:normal;font-weight:400 700;font-display:swap;
+    src:url(assets/fonts/quicksand-latin.woff2) format('woff2');
+    unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,
+      U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  /* Cùng box model với bản game (styles.css cũng có rule này). Thiếu nó thì
+     width + padding cộng dồn, phần tử phình ra và lệch — đã dính ở .result-field. */
+  *{box-sizing:border-box}
+  :root{
+    --ink:#26191e; --ink-soft:#8a6076;
+    --brand:#f25c7c; --brand-deep:#e8446b; --gold:#e8b84b;
+    --shadow:0 18px 48px rgba(150,70,105,.18);
+  }
+  html,body{margin:0;height:100%;background:#1a0f16;overflow:hidden;
+    font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+    color:var(--ink);user-select:none}
+  .viewport{position:fixed;inset:0;overflow:hidden}
+  .stage{position:absolute;top:0;left:0;width:1080px;height:1920px;
+    transform-origin:0 0;overflow:hidden;background:#f6d3e0}
+  .stage img{position:absolute;display:block}
+
+  /* ================= vùng tủ ================= */
+  #backgroundCloud{left:0;top:100px;width:1080px;height:1412px;object-fit:cover}
+  #background{left:0;top:0;width:1080px;height:1412px}
+  #rail     {left:22px;  top:var(--rail-y);   width:1036px;height:103px}
+  #floor    {left:26px;  top:var(--floor-y);  width:1028px;height:101px}
+  #ledge    {left:0;     top:var(--ledge-y);  width:1080px;height:47px}
+  #panel    {left:0;     top:1301px;          width:1080px;height:619px}
+
+  /* ================= cụm tay gắp ================= */
+  .claw{position:absolute;left:0;top:9px;width:1080px;height:1412px;
+    transform:translateX(var(--claw-x));will-change:transform}
+  #carriage{left:418px; top:var(--carriage-y); width:244px;height:191px}
+  #tube    {left:525px; top:var(--tube-y);     width:41px; height:var(--tube-h)}
+  /* hai tay móc nằm DƯỚI trục — trục đè lên gốc tay móc, che sai lệch tâm xoay */
+  #prongL  {left:var(--prongL-x); top:var(--prong-y); width:105px;height:216px;
+    transform-origin:88% 12%;transform:rotate(var(--prong-a))}
+  #prongR  {left:var(--prongR-x); top:var(--prong-y); width:104px;height:216px;
+    transform-origin:12% 12%;transform:rotate(calc(-1 * var(--prong-a)))}
+  #hub     {left:468px; top:var(--hub-y);      width:155px;height:163px}
+
+  /* ================= tim =================
+     isolation:isolate bắt buộc — không có nó, z-index của từng quả tim leo ra
+     ngoài và đua với bệ trước / bảng nút, khiến tim vẽ đè lên chúng. */
+  .hearts{position:absolute;left:-80px;top:60px;width:1080px;height:1412px;
+    z-index:0;isolation:isolate}
+  .grab-layer{position:absolute;left:0;top:0;width:1080px;height:1412px;
+    z-index:0;isolation:isolate}
+  .grab-layer img{position:absolute}
+
+  /* ================= UI màn chơi ================= */
+  .hud{position:absolute;left:0;right:0;top:0;height:160px;display:flex;
+    align-items:center;justify-content:center;z-index:10;pointer-events:none}
+  .badge-once{padding:14px 28px;border-radius:999px;background:rgba(255,255,255,.8);
+    font-size:28px;font-weight:700;color:var(--brand-deep)}
+
+  .tutorial{position:absolute;left:0;top:0;width:1080px;height:1301px;z-index:40;
+    display:grid;place-items:center;backdrop-filter:blur(6px);
+    background:rgba(255,240,246,.18)}
+  .tutorial-card{position:relative;width:820px}
+  .tutorial-card img{position:static;display:block;width:100%;height:auto}
+  /* Guide.png giờ chỉ còn khung rỗng (kẻ đứt + tim đã có sẵn trong ảnh),
+     chữ viết bằng HTML đè lên. Mốc dọc để theo % nên co giãn cùng khung.
+     Đo pixel thật trên Guide.png hiện tại (1676×1217, quét canvas): kẻ đứt +
+     tim nằm ở khoảng 55%→58.3% chiều cao khung — top2 phải sau mốc này,
+     nếu không kẻ đứt cắt ngay vào đầu chữ bước 2 thay vì nằm gọn phía trên. */
+  .tut-step{position:absolute;left:8%;right:8%;text-align:center;
+    font-family:'Quicksand','Segoe UI',sans-serif;font-weight:700;
+    font-size:43px;line-height:1.32;white-space:pre-line}
+  .tut-step1{top:31%;color:#3b2f2c}
+  .tut-step2{top:63%;color:#e94f43}
+  /* vertical-align:6px là số đo thực: với cỡ chữ 43px của .tut-step thì mức này
+     đưa tâm vòng tròn trùng đúng tâm dòng chữ (lệch 0). `middle` vẫn hụt 5px vì
+     nó canh theo x-height chứ không phải tâm quang học. */
+  .tut-num{display:inline-grid;place-items:center;width:45px;height:45px;
+    margin-right:14px;vertical-align:6px;border:3px solid #e94f43;border-radius:50%;
+    color:#e94f43;font-size:28px;line-height:1}
+
+  /* ---- bảng nút ---- */
+  .ctl-timer{position:absolute;left:50%;top:var(--timer-y);transform:translate(-50%,-4px);
+    z-index:11;white-space:nowrap;width:240px;box-sizing:border-box;padding:8px 0;
+    text-align:center;border-radius:999px 999px 0 0;
+    background:linear-gradient(180deg,rgba(255,255,255,.9) 0%,rgba(255,232,240,.55) 100%);
+    border:1.5px solid rgba(255,255,255,.8);
+    box-shadow:0 6px 14px rgba(196,84,120,.22),inset 0 3px 5px rgba(255,255,255,.95),
+      inset 0 -10px 16px rgba(224,140,164,.28);
+    font-family:ui-monospace,'SF Mono',Menlo,monospace;font-size:54px;font-weight:800;
+    color:#ff8177;letter-spacing:2px;font-variant-numeric:tabular-nums;
+    text-shadow:0 1px 0 rgba(255,255,255,.7)}
+  .ctl-timer.hurry{color:#e0335f}
+  .ctl-timerbar{position:absolute;left:var(--bar-x);top:var(--bar-y);z-index:11;
+    width:var(--bar-w);height:36px;box-sizing:border-box;padding:4px;border-radius:999px;
+    background:linear-gradient(180deg,#ffffff 0%,#ffdce8 100%);
+    border:1.5px solid #ffffff;
+    box-shadow:0 4px 10px rgba(196,84,120,.18),inset 0 2px 4px rgba(255,255,255,.9),
+      inset 0 -6px 10px rgba(224,140,164,.22);
+    overflow:hidden}
+  .ctl-timerbar i{display:block;height:100%;border-radius:999px;
+    background:#ff8177;
+    box-shadow:inset 0 2px 3px rgba(255,255,255,.65),inset 0 -4px 6px rgba(150,20,55,.3)}
+  .ctl-timerbar.hurry i{background:linear-gradient(180deg,#ff7a97 0%,var(--brand-deep) 55%,#c81b45 100%)}
+  .ctl-hints{position:absolute;left:56px;right:56px;top:var(--hints-y);z-index:11;
+    display:flex;justify-content:space-between;font-size:30px;color:var(--ink-soft)}
+
+  .btn{position:absolute;border:0;background:none;padding:0;cursor:pointer;z-index:12;
+    -webkit-tap-highlight-color:transparent;transition:transform 90ms ease,filter 90ms ease}
+  .btn img{position:static;display:block;width:100%;height:auto;pointer-events:none}
+  .btn.on{transform:translateY(5px) scale(.98);filter:brightness(.95)}
+  .btn.off{cursor:default}
+  #bLeft {left:110px; top:1529px; width:235px}
+  #bRight{left:305px; top:1529px; width:277px}
+  #bCatch{left:678px; top:1486px; width:390px}
+
+  /* ================= màn kết quả ================= */
+  .result{position:absolute;inset:0;z-index:50;overflow:hidden}
+  .result.win,.result.miss{background:transparent}
+  /* nội dung chỉ nằm trong vùng màn hình (1301px), chừa nguyên bảng nút phía dưới */
+  .result-field{position:absolute;top:0;left:0;width:1080px;height:1301px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:0 60px;text-align:center;overflow:hidden}
+  /* Tiêu đề màn thắng là ảnh Chucmung.png; màn trượt chỉ còn một dòng .miss-body.
+     Tách khỏi luồng để đặt được top (flex canh giữa thì không), và selector phải
+     đặc hiệu hơn .stage img{position:absolute} nếu không ảnh dạt về mép trái. */
+  .result .result-title-img{position:absolute;top:var(--result-title-y);left:50%;
+    transform:translateX(-50%);display:block;
+    width:var(--result-title-w);max-width:100%;height:auto}
+  /* khung Vien.png đã có sẵn viền, bo góc và đổ bóng — không vẽ lại bằng CSS.
+     aspect-ratio khoá theo đúng tỉ lệ ảnh gốc 1676×1217, nếu để chiều cao chạy
+     theo nội dung thì nơ và cầu vồng ở góc bị kéo méo. */
+  .prize-box{margin-top:46px;padding:48px 60px;width:100%;max-width:645px;
+    aspect-ratio:1676 / 1217;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    background:url(assets/cabinet/Vien.png) no-repeat;background-size:100% 100%}
+  /* không còn ô nền — khung Vien.png đã đóng vai nền rồi.
+     .prize-box .prize-icon: phải đặc hiệu hơn .stage img{position:absolute},
+     nếu không ảnh rơi khỏi luồng và dạt về mép trái. */
+  .prize-box .prize-icon{position:static;display:block;width:250px;height:200px;
+    margin:0 auto 24px;object-fit:contain}
+  .prize-name{font-family:'Quicksand','Segoe UI',sans-serif;font-size:40px;
+    font-weight:700;line-height:1.2;margin-top:-24px}
+  /* màn trượt dùng khung Vien2.png (cùng tỉ lệ gốc 1676×1217 như Vien.png
+     ở prize-box) làm nền, chữ đặt giữa khung — không còn thả trôi trên nền trong. */
+  .miss-box{margin-top:46px;padding:48px 60px;width:100%;max-width:645px;
+    aspect-ratio:1676 / 1217;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    background:url(assets/cabinet/Vien2.png) no-repeat;background-size:100% 100%}
+  /* pre-line để ký tự xuống dòng trong chuỗi được giữ (bản game lấy từ vi.json) */
+  .miss-body{font-family:'Quicksand','Segoe UI',sans-serif;
+    font-size:54px;font-weight:700;color:#000000;white-space:pre-line}
+  .watermark{position:absolute;top:60px;left:50%;transform:translateX(-50%);
+    padding:16px 40px;border-radius:999px;background:#2c1622;color:var(--gold);
+    font-size:34px;font-weight:800;letter-spacing:6px}
+  .confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .confetti i{position:absolute;top:-40px;border-radius:3px;animation:fall linear infinite}
+  @keyframes fall{to{transform:translateY(2000px) rotate(540deg)}}
+
+  /* ================= màn chờ W-00 (Attract) =================
+     Số liệu lấy từ styles.css của bản game — sửa ở đây rồi chuyển ngược lại.
+     Nền là tủ 2D đang chạy (giống màn READY), nên lớp phủ để trong suốt và chỉ
+     chiếm vùng màn hình 1301px — bảng nút phía dưới vẫn hiện nguyên. */
+  .attract{position:absolute;left:0;top:0;width:1080px;height:1301px;z-index:60;
+    pointer-events:none}
+  .attract-brand{position:absolute;top:var(--attract-brand-y);left:0;right:0;
+    text-align:center;z-index:5}
+  /* phải đủ đặc hiệu để thắng .stage img{position:absolute}, nếu không ảnh rơi ra
+     khỏi luồng và dạt về mép trái */
+  .attract .attract-title{position:relative;top:-91px;left:-8px;display:block;margin:0 auto;
+    width:var(--attract-title-w);height:auto}
+  .locale-switch{position:absolute;top:44px;right:44px;display:flex;gap:8px;z-index:20}
+  .locale-switch button{width:76px;height:56px;border-radius:14px;
+    border:2px solid rgba(200,150,175,.4);background:rgba(255,255,255,.7);
+    font-size:22px;font-weight:700;color:var(--ink-soft)}
+  .locale-switch button.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+  /* ================= bàn chỉnh (không thuộc game) ================= */
+  .dev{position:fixed;right:0;top:0;height:100%;width:250px;z-index:99;
+    background:rgba(20,10,16,.94);border-left:1px solid #6b3a50;color:#fff;
+    font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;
+    padding:14px;overflow:auto;transition:transform .18s ease;box-sizing:border-box}
+  .dev.hide{transform:translateX(250px)}
+  .dev h4{margin:16px 0 6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:#ff9dbb;font-weight:600}
+  .dev h4:first-child{margin-top:0}
+  .dev button{font:inherit;background:#43293a;color:#fff;border:1px solid #6b3a50;
+    border-radius:6px;padding:5px 8px;margin:0 4px 4px 0;cursor:pointer}
+  .dev button:hover{background:#5a3549}
+  .dev button.sel{background:var(--brand-deep);border-color:var(--brand)}
+  .dev .kv{display:flex;justify-content:space-between;gap:8px}
+  .dev .kv b{color:#ff9dbb;font-weight:600}
+  .devtoggle{position:fixed;right:250px;top:12px;z-index:100;background:rgba(20,10,16,.94);
+    color:#ff9dbb;border:1px solid #6b3a50;border-right:0;border-radius:6px 0 0 6px;
+    padding:6px 10px;cursor:pointer;font:12px ui-monospace,monospace;transition:right .18s ease}
+  .devtoggle.hide{right:0}
+</style>
+</head>
+<body>
+
+<div class="viewport">
+  <div class="stage" id="stage">
+
+    <img id="backgroundCloud" src="assets/cabinet/cloud.png" alt="">
+    <img id="background" src="assets/cabinet/background.png" alt="">
+    <img id="rail" src="assets/cabinet/rail.png" alt="">
+    <img id="floor" src="assets/cabinet/floor.png" alt="">
+
+    <!-- tim lớp TRONG CÙNG + GIỮA — cụm tay gắp đè lên -->
+    <div class="hearts" id="heartsBack"></div>
+
+    <!-- tay móc PHẢI — nằm dưới quả tim được gắp -->
+    <div class="claw" id="clawBack">
+      <img id="prongR" src="assets/cabinet/claw-prong-right.png" alt="">
+    </div>
+
+    <!-- quả tim sinh ra lúc gắp -->
+    <div class="grab-layer" id="grabLayer"></div>
+
+    <!-- thân máy + tay móc TRÁI — đè lên quả tim được gắp -->
+    <div class="claw" id="clawFront">
+      <img id="carriage" src="assets/cabinet/claw-carriage.png" alt="">
+      <img id="tube"     src="assets/cabinet/claw-tube.png" alt="">
+      <img id="prongL"   src="assets/cabinet/claw-prong-left.png" alt="">
+      <img id="hub"      src="assets/cabinet/claw-hub.png" alt="">
+    </div>
+
+    <!-- tim lớp NGOÀI CÙNG — đè lên cụm tay gắp -->
+    <div class="hearts" id="heartsFront"></div>
+
+    <img id="ledge" src="assets/cabinet/front-ledge.png" alt="">
+    <img id="panel" src="assets/cabinet/panel.png" alt="">
+
+    <!-- ---- UI màn chơi ---- -->
+    <div class="hud" id="uiHud"><div class="badge-once">1 lượt duy nhất</div></div>
+
+    <div class="ctl-timer" id="uiTimer">12:00</div>
+    <div class="ctl-timerbar" id="uiBar"><i></i></div>
+    <div class="ctl-hints" id="uiHints">
+      <span>Di chuyển sang trái phải để chọn vị trí</span><span>CATCH</span>
+    </div>
+
+    <button class="btn" id="bLeft"><img src="assets/cabinet/btn-left.png" alt="Sang trái"></button>
+    <button class="btn" id="bRight"><img src="assets/cabinet/btn-right.png" alt="Sang phải"></button>
+    <button class="btn" id="bCatch"><img src="assets/cabinet/btn-catch.png" alt="Gắp"></button>
+
+    <!-- ---- lớp phủ: hướng dẫn / kết quả / màn chờ ---- -->
+    <div id="uiTutorial"></div>
+    <div id="uiResult"></div>
+    <div id="uiAttract"></div>
+
+  </div>
+</div>
+
+<button class="devtoggle" id="devToggle">&#8677;</button>
+<div class="dev" id="dev">
+  <h4>Trạng thái</h4>
+  <div class="kv"><span>phase</span><b id="dPhase">READY</b></div>
+  <div class="kv"><span>tạm dừng</span><b id="dPaused">tắt</b></div>
+  <div class="kv"><span>clawX</span><b id="dX">0</b></div>
+  <div class="kv"><span>ống trượt</span><b id="dTube">120</b></div>
+  <div class="kv"><span>còn lại</span><b id="dAim">12.0s</b></div>
+
+  <h4>Nhảy tới bước</h4>
+  <div id="dPhases"></div>
+
+  <h4>Kết quả</h4>
+  <div id="dOutcome"></div>
+
+  <h4>Hiện / ẩn</h4>
+  <div id="dToggles"></div>
+
+  <h4>Điều khiển</h4>
+  <div>
+    <button data-act="restart">chơi lại</button>
+    <button data-act="pause" id="btnPause">tạm dừng &#9208;</button>
+    <button data-act="slow">chậm &times;0.35</button>
+  </div>
+
+  <h4>Phím tắt</h4>
+  <div style="color:#c69cb0">
+    &larr; &rarr; di chuyển &middot; space gắp<br>
+    R chơi lại &middot; P tạm dừng &middot; H ẩn bàn chỉnh
+  </div>
+</div>
+
+<script>
+/* ==================================================================
+   Bàn chỉnh bố cục 2D.
+
+   Dựng lại đủ UI và flow của game thật để canh số. Kết quả ở đây là giả
+   (bấm chọn TRÚNG/TRƯỢT), còn trong game thật server mới quyết định —
+   file này chỉ để chỉnh hình, không phải để kiểm chứng logic.
+   ================================================================== */
+
+const S = document.getElementById('stage');
+const dev = document.getElementById('dev');
+function fit(){
+  const pad = dev.classList.contains('hide') ? 0 : 250;
+  const w = innerWidth - pad;
+  const k = Math.min(w/1080, innerHeight/1920);
+  S.style.transform = `translate(${(w-1080*k)/2}px,${(innerHeight-1920*k)/2}px) scale(${k})`;
+}
+addEventListener('resize', fit);
+
+/* ---------- hằng số bố cục: chỉnh ở đây ---------- */
+const L = {
+  /* --- tủ --- */
+  railY: 78,
+  floorY: 1223,
+  ledgeY: 1256,
+  /* --- cụm tay gắp --- */
+  carriageY: 96,
+  tubeTop: 268,
+  tubeMin: 120,
+  tubeMax: 800,       // độ cắm sâu nhất
+  hubOverlap: 10,
+  prongDx: 92,
+  prongDy: 96,
+  prongOpen: 22,      // góc bung khi chờ (dương = ra ngoài)
+  prongClose: 2,      // góc siết khi kẹp (bị trừ, tức xoay vào trong)
+  clawRange: 285,     // biên chạy trái phải
+  /* --- tim --- */
+  heartSize: 296.4,   // +20%
+  clawTop: 9,         // .claw top — phải khớp CSS
+  heartsTop: 60,      // .hearts top — phải khớp CSS
+  heartsLeft: -80,    // .hearts left — phải khớp CSS
+  grabDy: 166,        // quả tim được gắp nằm dưới trục bao nhiêu
+  /* --- UI --- */
+  timerY: 1318,
+  barX: 330, barY: 1394, barW: 420,
+  hintsY: 1869,
+  /* --- màn chờ --- */
+  attractBrandY: 611,
+  attractTitleW: 900,   // bề ngang ảnh tittle.png (tỉ lệ gốc 2094×751)
+  resultTitleW: 700,    // bề ngang ảnh Chucmung.png (tỉ lệ gốc 2092×751)
+  resultTitleY: 300,    // mép trên ảnh Chucmung.png, tính từ đỉnh .result-field
+  /* --- nhịp (ms) --- */
+  tutorialMs: 2600,
+  aimMs: 12000,
+  dropMs: 1100,
+  grabMs: 750,
+  liftMs: 1300,
+  revealMs: 1200,
+  resultMs: 8000,
+};
+const r = document.documentElement.style;
+function applyConst(){
+  r.setProperty('--rail-y',  L.railY + 'px');
+  r.setProperty('--floor-y', L.floorY + 'px');
+  r.setProperty('--ledge-y', L.ledgeY + 'px');
+  r.setProperty('--carriage-y', L.carriageY + 'px');
+  r.setProperty('--tube-y', L.tubeTop + 'px');
+  r.setProperty('--timer-y', L.timerY + 'px');
+  r.setProperty('--bar-x', L.barX + 'px');
+  r.setProperty('--bar-y', L.barY + 'px');
+  r.setProperty('--bar-w', L.barW + 'px');
+  r.setProperty('--hints-y', L.hintsY + 'px');
+  r.setProperty('--attract-brand-y',  L.attractBrandY + 'px');
+  r.setProperty('--attract-title-w',  L.attractTitleW + 'px');
+  r.setProperty('--result-title-w',   L.resultTitleW + 'px');
+  r.setProperty('--result-title-y',   L.resultTitleY + 'px');
+}
+applyConst();
+
+/* ---------- đống tim: 3 lớp sâu ----------
+   Ảnh tim đã cắt sát viền nên heartSize là chiều ngang thật. Chiều dọc để auto
+   vì tỉ lệ mỗi file một khác — và vì thế đống neo theo ĐÁY, không theo đỉnh. */
+const CONTAINER_H = 1412;
+const PILE_BOTTOM = 1275;
+const ROWS = [
+  { lift: 112, scale: 0.80, xs: [ 96, 232, 368, 504, 640, 776, 900 ] },
+  { lift:  55, scale: 0.90, xs: [ 150, 296, 442, 588, 734, 866 ] },
+  { lift: -20, scale: 1.00, xs: [ 118, 268, 418, 568, 718, 862 ] },
+];
+const H_BACK  = document.getElementById('heartsBack');
+const H_FRONT = document.getElementById('heartsFront');
+const hearts = [];
+ROWS.forEach((row, ri) => {
+  row.xs.forEach((x, ci) => {
+    const size = L.heartSize * row.scale;
+    const im = document.createElement('img');
+    im.src = `assets/cabinet/heart${((ri*3+ci) % 5) + 1}.png`;
+    const jitter = ((ri*7 + ci*13) % 11) - 5;
+    const rot = ((ri*137 + ci*83) % 360) - 180;   // đủ hướng: nằm ngang lẫn đứng
+    const bottom = CONTAINER_H - PILE_BOTTOM + row.lift - jitter;
+    const h = {
+      el: im, x, size, rot, row: ri, bottom,
+      x0: x, bottom0: bottom, rot0: rot, xOrig: x, rotOrig: rot,
+      seed: ((ri*61 + ci*97) % 100) / 100,
+      h: size / 1.12,
+    };
+    h.top = CONTAINER_H - bottom - h.h;
+    im.style.width = size + 'px';
+    im.style.height = 'auto';
+    im.style.zIndex = String(ri);
+    im.addEventListener('load', () => { h.h = im.offsetHeight; h.top = CONTAINER_H - h.bottom0 - h.h; });
+    place(h);
+    (ri === 2 ? H_FRONT : H_BACK).appendChild(im);
+    hearts.push(h);
+  });
+});
+function place(h){
+  h.el.style.left = h.x + 'px';
+  if (h.bottom !== undefined) h.el.style.bottom = h.bottom + 'px';
+  else h.el.style.top = h.y + 'px';
+  h.el.style.transform = `rotate(${h.rot}deg)`;
+}
+
+/* ---------- đống tim bị càng khuấy ----------
+   Lực tính theo độ cắm THẬT của mũi càng vào từng quả, không theo độ dài ống —
+   nếu theo ống thì tim động từ lúc càng còn ở trần, nhìn ra ngay là giả. */
+const DIG = {
+  radius: 210, bite: 100, depth: 100,
+  push: 48, lift: 16, spin: 24,
+  keep: 0.25, drift: 40, twist: 22,
+};
+function prongTipY(){
+  const a = (open*L.prongOpen - (1-open)*L.prongClose) * Math.PI / 180;
+  const prongY = hubY() + L.prongDy;
+  // ảnh tay móc cao 216, tâm xoay ở 12% từ đỉnh → tâm xoay tới mũi dài 190
+  return prongY + 25.9 + 190.1 * Math.cos(a) + L.clawTop - L.heartsTop;
+}
+function disturb(){
+  const tipY = prongTipY();
+  const cx = 540 + clawX - L.heartsLeft;
+  for (const h of hearts){
+    const d = h.x0 + h.size/2 - cx;
+    const t = Math.max(0, 1 - Math.abs(d) / DIG.radius);
+    const dig = Math.max(0, Math.min(1, (tipY - h.top - DIG.bite) / DIG.depth));
+    if (t === 0 || dig === 0){
+      h.x = h.x0; h.bottom = h.bottom0; h.rot = h.rot0; place(h); continue;
+    }
+    const w = t * t * dig * (h.row === 0 ? 0.35 : 1);
+    const dir = d === 0 ? (h.seed < 0.5 ? -1 : 1) : Math.sign(d);
+    h.x      = h.x0 + dir * DIG.push * w * (0.6 + h.seed * 0.8);
+    h.bottom = h.bottom0 - DIG.lift * w * h.seed;
+    h.rot    = h.rot0 + dir * DIG.spin * w * (0.5 + h.seed);
+    place(h);
+  }
+}
+function settlePile(){
+  for (const h of hearts){
+    const nx = h.x0 + (h.x - h.x0) * DIG.keep;
+    h.x0 = Math.max(h.xOrig - DIG.drift, Math.min(h.xOrig + DIG.drift, nx));
+    const nr = h.rot0 + (h.rot - h.rot0) * DIG.keep;
+    h.rot0 = Math.max(h.rotOrig - DIG.twist, Math.min(h.rotOrig + DIG.twist, nr));
+  }
+}
+
+/* ---------- trạng thái ---------- */
+const PHASES = ['ATTRACT','READY','AIM','DROP','GRAB','LIFT','REVEAL','RESULT'];
+let clawX = 0, tube = L.tubeMin, open = 1;
+let phase = 'READY', t0 = performance.now(), aimLeft = L.aimMs;
+let grabbed = null, timeScale = 1, outcome = 'win';
+let paused = false;
+let locale = 'vi';
+const show = { ui: true, hearts: true, claw: true, cabinet: true };
+
+function hubY(){ return L.tubeTop + tube - L.hubOverlap; }
+
+/* ---------- quả tim được gắp ---------- */
+const GRAB = document.getElementById('grabLayer');
+function spawnHeart(){
+  const im = document.createElement('img');
+  im.src = `assets/cabinet/heart${Math.floor(Math.random()*5) + 1}.png`;
+  im.style.width = L.heartSize + 'px';
+  im.style.height = 'auto';
+  GRAB.appendChild(im);
+  grabbed = { el: im, x: 0, y: 0, size: L.heartSize, rot: 0 };
+}
+function release(){
+  if (!grabbed) return;
+  grabbed.el.remove();
+  grabbed = null;
+}
+
+/* ---------- vẽ ---------- */
+function layout(){
+  r.setProperty('--claw-x', clawX.toFixed(1)+'px');
+  r.setProperty('--tube-h', tube.toFixed(1)+'px');
+  const hy = hubY();
+  r.setProperty('--hub-y', hy.toFixed(1)+'px');
+  r.setProperty('--prong-y', (hy + L.prongDy).toFixed(1)+'px');
+  r.setProperty('--prongL-x', (540 - L.prongDx - 105/2).toFixed(1)+'px');
+  r.setProperty('--prongR-x', (540 + L.prongDx - 104/2).toFixed(1)+'px');
+  r.setProperty('--prong-a', (open*L.prongOpen - (1-open)*L.prongClose).toFixed(1)+'deg');
+
+  if (grabbed){
+    grabbed.x = 540 + clawX - grabbed.size/2;
+    grabbed.y = hy + L.clawTop + L.grabDy;
+    place(grabbed);
+  }
+  disturb();
+}
+
+/* ---------- UI ---------- */
+const uiTimer = document.getElementById('uiTimer');
+const uiBar   = document.getElementById('uiBar');
+const uiHints = document.getElementById('uiHints');
+const uiHud   = document.getElementById('uiHud');
+const uiTut   = document.getElementById('uiTutorial');
+const uiRes   = document.getElementById('uiResult');
+const uiAtt   = document.getElementById('uiAttract');
+const bLeft  = document.getElementById('bLeft');
+const bRight = document.getElementById('bRight');
+const bCatch = document.getElementById('bCatch');
+const clawEls = ['clawBack','clawFront'].map(id => document.getElementById(id));
+let tutShown = null;
+/* nút VI/EN được dựng lại mỗi lần vào ATTRACT (xem renderUI) nên bắt sự kiện
+   theo kiểu delegation trên uiAtt thay vì gắn trực tiếp lúc tạo nút */
+uiAtt.addEventListener('click', e => {
+  const b = e.target.closest('button[data-locale]');
+  if (!b) return;
+  locale = b.dataset.locale;
+  uiAtt.innerHTML = attractHTML();
+});
+
+function renderUI(){
+  const attract = phase === 'ATTRACT';
+  const playing = phase !== 'RESULT' && !attract;
+  const canInput = phase === 'AIM';
+  /* đồng hồ + thanh đếm giờ hiện xuyên suốt cả màn chờ/reveal/kết quả,
+     chỉ badge "1 lượt" và hint trái-phải/CATCH mới ẩn ngoài lúc đang chơi. */
+  const zeroTimer = attract || phase === 'REVEAL' || phase === 'RESULT';
+
+  for (const el of [uiHud, uiHints]){
+    el.style.display = (show.ui && playing) ? '' : 'none';
+  }
+  for (const el of [uiTimer, uiBar]){
+    el.style.display = show.ui ? '' : 'none';
+  }
+  /* nút bấm của thùng luôn hiển thị — kể cả màn chờ và màn RESULT — chỉ đổi trạng thái .off */
+  for (const el of [bLeft, bRight, bCatch]){
+    el.style.display = show.ui ? '' : 'none';
+  }
+  for (const el of clawEls) el.style.display = show.claw ? '' : 'none';
+  for (const b of [bLeft, bRight, bCatch]) b.classList.toggle('off', !canInput);
+
+  const shownLeft = zeroTimer ? 0 : aimLeft;
+  const secs = Math.max(0, shownLeft/1000);
+  const hurry = canInput && aimLeft <= 3000;
+  uiTimer.textContent = secs.toFixed(2).replace('.', ':');
+  uiTimer.classList.toggle('hurry', hurry);
+  uiBar.classList.toggle('hurry', hurry);
+  uiBar.firstElementChild.style.width = `${Math.max(0, shownLeft/L.aimMs*100)}%`;
+
+  /* hướng dẫn — chỉ dựng lại khi trạng thái đổi, không đụng DOM mỗi frame */
+  const wantTut = show.ui && phase === 'READY';
+  if (wantTut !== tutShown){
+    tutShown = wantTut;
+    uiTut.innerHTML = wantTut ? `
+      <div class="tutorial">
+        <div class="tutorial-card">
+          <img src="assets/cabinet/Guide.png" alt="">
+          <div class="tut-step tut-step1"><span class="tut-num">1</span>Di chuyển sang trái &middot; phải<br>để chọn vị trí</div>
+          <div class="tut-step tut-step2"><span class="tut-num">2</span>Rồi nhấn CATCH</div>
+        </div>
+      </div>` : '';
+  }
+
+  /* kết quả */
+  if (phase === 'RESULT'){
+    if (!uiRes.firstElementChild) uiRes.innerHTML = resultHTML();
+  } else if (uiRes.firstElementChild){
+    uiRes.innerHTML = '';
+  }
+
+  /* màn chờ */
+  if (attract){
+    if (!uiAtt.firstElementChild) uiAtt.innerHTML = attractHTML();
+  } else if (uiAtt.firstElementChild){
+    uiAtt.innerHTML = '';
+  }
+}
+/* Màn chờ W-00 — chữ lấy đúng từ packages/shared/src/i18n/vi.json.
+   Nền dùng luôn tủ 2D đang chạy, không phát video loop. */
+function attractHTML(){
+  const title = locale === 'en' ? 'tittle2.png' : 'tittle.png';
+  return `
+    <div class="attract">
+      <div class="locale-switch">
+        <button data-locale="vi" class="${locale === 'vi' ? 'on' : ''}">VI</button>
+        <button data-locale="en" class="${locale === 'en' ? 'on' : ''}">EN</button>
+      </div>
+      <div class="attract-brand">
+        <img class="attract-title" src="assets/cabinet/${title}" alt="LUCKY DRAW">
+      </div>
+    </div>`;
+}
+function resultHTML(){
+  return outcome === 'win' ? `
+    <div class="result win">
+      <div class="confetti">${confettiHTML(90)}</div>
+      <div class="watermark">TEST</div>
+      <div class="result-field">
+        <img class="result-title-img" src="assets/cabinet/Chucmung.png" alt="Chúc mừng">
+        <div class="prize-box">
+          <img class="prize-icon" src="assets/cabinet/gift.png" alt="">
+          <div class="prize-name">Quà Giải Nhất</div>
+        </div>
+      </div>
+    </div>` : `
+    <div class="result miss">
+      <div class="watermark">TEST</div>
+      <div class="result-field">
+        <div class="miss-box">
+          <div class="miss-body">Chúc bạn
+may mắn lần sau</div>
+        </div>
+      </div>
+    </div>`;
+}
+function confettiHTML(n){
+  const cols = ['#f2a1bd','#c9a5f0','#8fd8f5','#f9d34e','#f28ba8','#ffc48a'];
+  let s = '';
+  for (let i=0;i<n;i++){
+    s += `<i style="left:${(i*37)%100}%;width:${12+(i%6)*2}px;height:${20+(i%5)*4}px;`
+       + `background:${cols[i%cols.length]};animation-delay:${(i%14)*0.1}s;`
+       + `animation-duration:${2.6+(i%9)*0.25}s"></i>`;
+  }
+  return s;
+}
+
+/* ---------- máy trạng thái ---------- */
+function goto(next){
+  phase = next; t0 = performance.now();
+  if (next === 'READY'){
+    clawX = 0; tube = L.tubeMin; open = 1; aimLeft = L.aimMs;
+    release();
+    for (const h of hearts){ h.x0 = h.xOrig; h.rot0 = h.rotOrig; }
+  }
+  /* màn chờ: tay gắp treo giữa, khép lại như đang kẹp gấu */
+  if (next === 'ATTRACT'){
+    clawX = 0; tube = L.tubeMin; open = 0;
+    release();
+  }
+  if (next === 'AIM') aimLeft = L.aimMs;
+  if (next === 'DROP'){ release(); open = 1; }
+  if (next === 'RESULT') uiRes.innerHTML = '';
+}
+const ease = t => t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+
+let held = 0;
+let lastNow = performance.now();
+function frame(now){
+  /* tạm dừng: dồn thời gian thực trôi qua vào t0 để "el" đứng yên —
+     màn hình hiện tại đóng băng nguyên trạng cho tới khi tiếp tục. */
+  const dtReal = now - lastNow;
+  lastNow = now;
+  if (paused) t0 += dtReal;
+
+  const el = (now - t0) * timeScale;
+
+  if (!paused){
+    if (phase === 'READY'){
+      if (el > L.tutorialMs) goto('AIM');
+    } else if (phase === 'AIM'){
+      if (held) clawX = Math.max(-L.clawRange, Math.min(L.clawRange, clawX + held*7));
+      aimLeft = Math.max(0, L.aimMs - el);
+      if (aimLeft === 0) goto('DROP');
+    } else if (phase === 'DROP'){
+      const t = Math.min(1, el/L.dropMs);
+      tube = L.tubeMin + ease(t)*(L.tubeMax-L.tubeMin);
+      if (t >= 1) goto('GRAB');
+    } else if (phase === 'GRAB'){
+      open = Math.max(0, 1 - el/(L.grabMs*0.6));
+      if (!grabbed && el > L.grabMs*0.56 && outcome === 'win') spawnHeart();
+      if (el > L.grabMs){ settlePile(); goto('LIFT'); }
+    } else if (phase === 'LIFT'){
+      const t = Math.min(1, el/L.liftMs);
+      tube = L.tubeMax - ease(t)*(L.tubeMax-L.tubeMin);
+      if (t >= 1) goto('REVEAL');
+    } else if (phase === 'REVEAL'){
+      if (el > L.revealMs) goto('RESULT');
+    } else if (phase === 'RESULT'){
+      if (el > L.resultMs) goto('READY');
+    }
+  }
+
+  layout();
+  renderUI();
+  updateDev();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- điều khiển ---------- */
+addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft')  held = -1;
+  if (e.key === 'ArrowRight') held = 1;
+  if (e.code === 'Space'){ e.preventDefault(); if (phase === 'AIM') goto('DROP'); }
+  if (e.key === 'r' || e.key === 'R') goto('READY');
+  if (e.key === 'p' || e.key === 'P') togglePause();
+  if (e.key === 'h' || e.key === 'H') toggleDev();
+});
+addEventListener('keyup', () => { held = 0; });
+const hold = (elm, d) => {
+  const on = e => { e.preventDefault(); if (phase === 'AIM'){ held = d; elm.classList.add('on'); } };
+  const off = () => { held = 0; elm.classList.remove('on'); };
+  elm.addEventListener('pointerdown', on);
+  elm.addEventListener('pointerup', off);
+  elm.addEventListener('pointerleave', off);
+  elm.addEventListener('pointercancel', off);
+};
+hold(bLeft, -1); hold(bRight, 1);
+bCatch.addEventListener('pointerdown', () => {
+  if (phase !== 'AIM') return;
+  bCatch.classList.add('on'); goto('DROP');
+});
+bCatch.addEventListener('pointerup', () => bCatch.classList.remove('on'));
+
+/* ---------- bàn chỉnh ---------- */
+const devToggle = document.getElementById('devToggle');
+function toggleDev(){
+  dev.classList.toggle('hide');
+  devToggle.classList.toggle('hide');
+  fit();
+}
+devToggle.addEventListener('click', toggleDev);
+
+const btnPause = document.getElementById('btnPause');
+function syncPauseBtn(){
+  btnPause.classList.toggle('sel', paused);
+  btnPause.innerHTML = paused ? 'tiếp tục &#9654;' : 'tạm dừng &#9208;';
+}
+function togglePause(){ paused = !paused; syncPauseBtn(); }
+
+const dPhases = document.getElementById('dPhases');
+PHASES.forEach(p => {
+  const b = document.createElement('button');
+  b.textContent = p; b.dataset.phase = p;
+  /* nhảy tới bước nào thì tự đóng băng luôn ở đó, khỏi bị timer đẩy đi tiếp
+     trước khi kịp soi/chỉnh — bấm "tiếp tục" khi nào muốn cho chạy lại */
+  b.addEventListener('click', () => { goto(p); paused = true; syncPauseBtn(); });
+  dPhases.appendChild(b);
+});
+const dOutcome = document.getElementById('dOutcome');
+[['win','TRÚNG'],['miss','TRƯỢT']].forEach(([v,label]) => {
+  const b = document.createElement('button');
+  b.textContent = label; b.dataset.outcome = v;
+  b.addEventListener('click', () => { outcome = v; uiRes.innerHTML = ''; });
+  dOutcome.appendChild(b);
+});
+const dToggles = document.getElementById('dToggles');
+[['ui','UI'],['hearts','tim'],['claw','tay gắp'],['cabinet','tủ']].forEach(([k,label]) => {
+  const b = document.createElement('button');
+  b.textContent = label; b.dataset.toggle = k;
+  b.addEventListener('click', () => { show[k] = !show[k]; applyShow(); });
+  dToggles.appendChild(b);
+});
+function applyShow(){
+  for (const el of [H_BACK, H_FRONT, GRAB]) el.style.display = show.hearts ? '' : 'none';
+  /* tay gắp do renderUI quản (còn phụ thuộc phase), đừng ghi đè ở đây */
+  for (const id of ['background','rail','floor','ledge','panel'])
+    document.getElementById(id).style.display = show.cabinet ? '' : 'none';
+}
+dev.addEventListener('click', e => {
+  const act = e.target.dataset && e.target.dataset.act;
+  if (act === 'restart') goto('READY');
+  if (act === 'pause') togglePause();
+  if (act === 'slow'){
+    timeScale = timeScale === 1 ? 0.35 : 1;
+    e.target.classList.toggle('sel', timeScale !== 1);
+  }
+});
+
+const dPhase = document.getElementById('dPhase'), dX = document.getElementById('dX'),
+      dTube = document.getElementById('dTube'), dAim = document.getElementById('dAim'),
+      dPaused = document.getElementById('dPaused');
+function updateDev(){
+  dPhase.textContent = phase;
+  dPaused.textContent = paused ? 'BẬT' : 'tắt';
+  dX.textContent = clawX.toFixed(0);
+  dTube.textContent = tube.toFixed(0);
+  dAim.textContent = (aimLeft/1000).toFixed(1) + 's';
+  for (const b of dPhases.children) b.classList.toggle('sel', b.dataset.phase === phase);
+  for (const b of dOutcome.children) b.classList.toggle('sel', b.dataset.outcome === outcome);
+  for (const b of dToggles.children) b.classList.toggle('sel', show[b.dataset.toggle]);
+}
+
+/* dùng cho script chụp ảnh */
+window.__set = (x, t, o) => {
+  clawX = x; tube = t; open = o; phase = 'HOLD';
+  if (!grabbed && o < 0.5) spawnHeart();
+  layout(); renderUI();
+};
+window.__phase = (p) => goto(p);
+window.__outcome = (v) => { outcome = v; uiRes.innerHTML = ''; };
+window.__L = L;
+
+applyShow();
+fit();
+layout();
+renderUI();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

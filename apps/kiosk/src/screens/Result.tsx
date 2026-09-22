@@ -5,19 +5,11 @@
  *       지급은 어드민 지급 큐(§6.4)에서 비동기로 처리한다.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { RevealPlan } from '@aepick/shared';
-import { localized, t } from '../i18n';
+import { getLocale, localized, t } from '../i18n';
 import { BALL_PALETTE } from '../game/layout';
-
-const TIER_KEY: Record<string, string> = {
-  t1: 'tier.t1',
-  t2: 'tier.t2',
-  t3: 'tier.t3',
-  t4: 'tier.t4',
-  t5: 'tier.t5',
-  miss: 'tier.miss',
-};
+import { assetUrl } from '../assetUrl';
 
 function Confetti({ level }: { level: 1 | 2 | 3 }) {
   const pieces = useMemo(() => {
@@ -63,16 +55,13 @@ export interface ResultProps {
 
 export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
   const totalMs = reveal.resultSeconds * 1000;
-  const [elapsed, setElapsed] = useState(0);
   const startedAt = useRef(performance.now());
 
   useEffect(() => {
     if (disableTimeout) return;
     let raf = 0;
     const tick = () => {
-      const e = performance.now() - startedAt.current;
-      setElapsed(e);
-      if (e >= totalMs) {
+      if (performance.now() - startedAt.current >= totalMs) {
         onReturn();
         return;
       }
@@ -83,49 +72,47 @@ export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalMs, disableTimeout]);
 
-  const remain = Math.max(0, 1 - elapsed / totalMs);
-
   if (!reveal.win) {
     return (
       <div className="result miss">
         {reveal.isTest && <div className="test-watermark">{t('result.testWatermark')}</div>}
-        <h1 className="result-title">{t('result.missTitle')}</h1>
-        <p className="result-miss-body">{t('result.missBody')}</p>
-        <div className="tier-pill">{t(TIER_KEY.miss)}</div>
-        <div className="result-progress">
-          <i style={{ width: `${remain * 100}%` }} />
+        <div className="result-field">
+          <div
+            className="result-miss-box"
+            style={{ backgroundImage: `url(${assetUrl('/assets/cabinet/Vien2.png')})` }}
+          >
+            <p className="result-miss-body">{t('result.missBody')}</p>
+          </div>
         </div>
       </div>
     );
   }
 
   const prizeName = localized(reveal.prize?.name);
+  /* 당첨 타이틀 이미지는 글자가 그림에 박혀 있어 언어별로 파일을 바꿔야 한다.
+     Chucmung.png = 베트남어, Chucmung2.png = 영문(Congratulations). */
+  const titleImg = getLocale() === 'vi' ? 'Chucmung.png' : 'Chucmung2.png';
 
   return (
     <div className="result win">
       {reveal.isTest && <div className="test-watermark">{t('result.testWatermark')}</div>}
       <Confetti level={reveal.effectLevel} />
 
-      <h1 className="result-title">{t('result.winTitle')}</h1>
-      <div className="tier-pill">{t(TIER_KEY[reveal.tier] ?? 'tier.t5')}</div>
+      <div className="result-field">
+        <img
+          className="result-title-img"
+          src={assetUrl(`/assets/cabinet/${titleImg}`)}
+          alt={t('result.winTitle')}
+        />
 
-      {/* §6.3 — 등급보다 실제 지급 경품명·이미지를 크게 표시한다 */}
-      <div className="prize-box">
-        <div className="prize-visual">🎁</div>
-        <div className="prize-name">{prizeName}</div>
-      </div>
-
-      {/* §10.3 — 6자리를 한 줄로 크게. 운영자가 지급 큐에서 조회하는 값 */}
-      {reveal.claimCode && (
-        <div className="code-box">
-          <div className="label">{t('result.codeLabel')}</div>
-          <div className="code">{reveal.claimCode}</div>
-          <div className="hint">{t('result.showToStaff')}</div>
+        {/* §6.3 — 등급보다 실제 지급 경품명·이미지를 크게 표시한다 */}
+        <div
+          className="prize-box"
+          style={{ backgroundImage: `url(${assetUrl('/assets/cabinet/Vien.png')})` }}
+        >
+          <img className="prize-visual" src={assetUrl('/assets/cabinet/gift.png')} alt="" />
+          <div className="prize-name">{prizeName}</div>
         </div>
-      )}
-
-      <div className="result-progress">
-        <i style={{ width: `${remain * 100}%` }} />
       </div>
     </div>
   );

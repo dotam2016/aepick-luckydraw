@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { WIN_TIERS, type ResultTier, type RevealMode } from '@aepick/shared';
 import type { RecoverableSession } from '../api';
+import { t } from '../i18n';
 
 export interface OperatorPanelProps {
   busy: boolean;
@@ -83,8 +84,8 @@ export function OperatorPanel(props: OperatorPanelProps) {
     return (
       <div className="op-overlay">
         <div className="op-card">
-          <h2>운영자 확인</h2>
-          <div className="sub">PIN {PIN_LEN}자리를 입력하세요</div>
+          <h2>{t('operator.confirmTitle')}</h2>
+          <div className="sub">{t('operator.pinPrompt', { len: String(PIN_LEN) })}</div>
           <div className="pin-display">
             {Array.from({ length: PIN_LEN }, (_, i) => (
               <i key={i} className={i < pin.length ? 'on' : ''} />
@@ -100,7 +101,7 @@ export function OperatorPanel(props: OperatorPanelProps) {
           {error && <div className="op-error">{error}</div>}
           <div className="op-actions" style={{ marginTop: 22 }}>
             <button className="btn ghost" onPointerDown={onClose}>
-              닫기
+              {t('operator.close')}
             </button>
           </div>
         </div>
@@ -138,7 +139,7 @@ export function OperatorPanel(props: OperatorPanelProps) {
               무효 처리
             </button>
             <button className="btn ghost" onPointerDown={onClose}>
-              닫기
+              {t('operator.close')}
             </button>
           </div>
         </div>
@@ -152,8 +153,8 @@ export function OperatorPanel(props: OperatorPanelProps) {
   return (
     <div className="op-overlay">
       <div className="op-card">
-        <h2>1회 플레이 승인</h2>
-        <div className="sub">참여 자격을 확인한 뒤 승인하세요</div>
+        <h2>{t('operator.approveTitle')}</h2>
+        <div className="sub">{t('operator.approveSub')}</div>
 
         <div className="op-actions">
           <button
@@ -161,7 +162,7 @@ export function OperatorPanel(props: OperatorPanelProps) {
             disabled={busy || blocked}
             onPointerDown={() => onStart({ isTest: false })}
           >
-            {busy ? '승인 중…' : '1회 플레이 시작'}
+            {busy ? t('operator.approving') : t('operator.startPlay')}
           </button>
 
           <button
@@ -171,7 +172,7 @@ export function OperatorPanel(props: OperatorPanelProps) {
               setForceTier(undefined);
             }}
           >
-            테스트 세션 {testMode ? '접기' : '열기'}
+            {testMode ? t('operator.testSessionCollapse') : t('operator.testSessionOpen')}
           </button>
         </div>
 
@@ -225,19 +226,9 @@ export function OperatorPanel(props: OperatorPanelProps) {
 
         {error && <div className="op-error">{error}</div>}
 
-        <div className="op-status">
-          네트워크 <b>{online ? 'ONLINE' : 'OFFLINE'}</b> · 행사 <b>{eventOn ? 'ON' : 'OFF'}</b>
-          {blocked && (
-            <>
-              <br />
-              신규 플레이를 시작할 수 없습니다.
-            </>
-          )}
-        </div>
-
         <div className="op-actions" style={{ marginTop: 20 }}>
           <button className="btn ghost" onPointerDown={onClose}>
-            닫기
+            {t('operator.close')}
           </button>
         </div>
       </div>

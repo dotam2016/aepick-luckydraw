@@ -1,190 +1,173 @@
 /**
- * 구슬 지오메트리 · 텍스처.
+ * 구슬(하트) 지오메트리 — 풍선처럼 통통한 3D 하트.
  *
- * 레퍼런스 확대 관찰: 은색 구슬의 줄무늬는 텍스처가 아니라 실제로 골이 파인 지오메트리다
- * (능선이 개별적으로 빛을 받는다). 그래서 구체 정점을 방향에 따라 변위시켜 만든다.
- * 극 근처에서 골이 수렴해 지저분해지므로 sin(φ)로 진폭을 감쇠시킨다.
+ * 레퍼런스(heart1.png): 광택 캔디 하트가 어느 방향에서도 평평한 면 없이 매끄럽게
+ * 둥글다. 이전 시도(ExtrudeGeometry+bevel)는 캡을 부풀려도 옆면이 곧은 벽이라
+ * 옆에서 보면 알약처럼 보였다.
+ *
+ * 그래서 SphereGeometry와 같은 방식으로 만든다: 위도 원을 sin(theta)로 좁혀
+ * 극에서 하나로 모으는 대신, "원" 자리에 하트 2D 윤곽을 그대로 쓴다. 적도
+ * (theta=90°)에서는 원본 하트 윤곽이 그대로 나오고, 앞/뒤 극으로 갈수록 같은
+ * 윤곽이 통째로 축소되며 한 점에 모인다.
+ *
+ * 처음엔 모든 고리에서 같은(자기닮음) 윤곽을 그대로 축소해 썼는데, 노치처럼
+ * 오목한 자리는 아무리 부드럽게 다듬어도 앞극→뒤극까지 이어지는 골로 남아
+ * 앞면 한가운데를 가로지르는 선처럼 보였다 — 국소 곡률을 아무리 다듬어도
+ * "그 골이 깊이 방향으로 끝까지 이어진다"는 사실 자체는 바뀌지 않기 때문이다.
+ * 그래서 적도에서 멀어질수록(극에 가까워질수록) 윤곽 자체를 매끄럽게 뭉갠
+ * 버전(roundOutline)과 섞어, 노치·끝점 같은 하트만의 굴곡이 적도 부근에서만
+ * 나타나고 극 쪽은 둥글게 마무리되게 한다 — 정면(적도 부근)에서는 참고
+ * 이미지처럼 또렷한 하트 실루엣이, 옆·비스듬한 각도(극 쪽)에서는 골이나
+ * 능선 없이 풍선처럼 매끈하게 보인다.
+ *
+ * 물리 콜라이더는 그대로 구(sphere)를 쓴다(clawGame.ts 참조) — 게임플레이(간격,
+ * 집게 하강 깊이 등)는 그 반지름 그대로 유지해야 하므로 건드리지 않는다.
+ *
+ * VISUAL_SCALE(바운딩 스피어 반지름)을 1보다 크게 두면(한때 2, 이후 1.6을
+ * 써봤다) 옆 구슬의 콜라이더는 서로 닿기만 해도 실제로 더 큰 시각 메시끼리는
+ * 서로의 안쪽까지 파고들어 겹쳐 보인다 — "구슬처럼 서로 맞닿기만 하고 안으로
+ * 파고들면 안 된다"는 피드백을 받고 1로 되돌렸다. 하트가 자기 바운딩 스피어를
+ * 꽉 채우지 않는 방향도 있어서(모서리 쪽), 콜라이더가 맞닿아도 대부분은 살짝
+ * 틈이 생기고 최악의 경우(하트의 가장 볼록한 부분끼리 정면으로 마주칠 때)에만
+ * 딱 맞닿는다 — 실제 구슬 더미와 같은 방식으로 겹친다.
  */
 
 import * as THREE from 'three';
-import type { BallKind } from './layout';
 
-const geoCache = new Map<string, THREE.BufferGeometry>();
+/**
+ * 좌우 대칭 2D 하트 윤곽. 원점 근처, 노치는 위쪽 중앙, 끝점은 아래쪽.
+ *
+ * 이 윤곽을 극점까지 자기닮음 축소하며 앞극→뒤극으로 쌓는 로프트 방식에서는,
+ * 윤곽 위의 한 점이 "각지게" 꺾여 있으면(접선이 그 점 앞뒤로 방향이 바뀌면)
+ * 그 각도 위치를 따라 앞극→뒤극까지 이어지는 골(오목한 노치)이나 능선(볼록한
+ * 끝점)이 곡면 전체에 뚜렷한 선으로 드러난다 — 각을 완만하게(더 둔각으로) 잡는
+ * 정도로는 사라지지 않고 옅어지기만 한다.
+ *
+ * 노치·끝점 둘 다 완전히 매끄럽게(접선 연속, 각짐 없음) 만들어 이 자국 자체를
+ * 없앤다 — 곡선이 만나는 지점 양쪽의 제어점을 그 지점과 같은 높이에 둬서
+ * 접선이 항상 수평이 되게 한다(대칭축 위의 매끄러운 극소점은 접선이 수평이어야
+ * 한다). 끝점(하단)은 하트의 정체성이라 완전히 뭉개지 않지만, 접힘 각도를
+ * 넓게 잡아(핸들을 넉넉히 둬서) 참고 이미지처럼 완만하고 둥근 인상으로 만든다
+ * — 핸들이 짧을수록 수학적으로는 매끄러워도 육안으로는 더 뾰족해 보인다.
+ */
+function heartShape(): THREE.Shape {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0.85);
+  s.bezierCurveTo(0.24, 0.85, 0.34, 1.06, 0.62, 1.0);
+  s.bezierCurveTo(0.9, 0.96, 1.08, 0.68, 1.0, 0.32);
+  s.bezierCurveTo(0.9, -0.15, 0.3, -0.95, 0, -1.15);
+  s.bezierCurveTo(-0.3, -0.95, -0.9, -0.15, -1.0, 0.32);
+  s.bezierCurveTo(-1.08, 0.68, -0.9, 0.96, -0.62, 1.0);
+  s.bezierCurveTo(-0.34, 1.06, -0.24, 0.85, 0, 0.85);
+  return s;
+}
 
-export function ballGeometry(kind: BallKind, ribCount: number, amplitude: number): THREE.BufferGeometry {
-  const key = `${kind}:${ribCount}:${amplitude.toFixed(3)}`;
-  const hit = geoCache.get(key);
-  if (hit) return hit;
-
-  const smooth = kind === 'smooth' || amplitude <= 0;
-  const geo = new THREE.SphereGeometry(1, smooth ? 40 : 96, smooth ? 28 : 64);
-
-  if (!smooth) {
-    const pos = geo.attributes.position as THREE.BufferAttribute;
-    const v = new THREE.Vector3();
-    for (let i = 0; i < pos.count; i++) {
-      v.fromBufferAttribute(pos, i);
-      const len = v.length();
-      const phi = Math.acos(THREE.MathUtils.clamp(v.y / len, -1, 1));
-      const taper = Math.sin(phi); // 극에서 0, 적도에서 1
-      const disp =
-        kind === 'ribbed'
-          ? Math.sin(Math.atan2(v.z, v.x) * ribCount) * amplitude * taper
-          : Math.sin(phi * ribCount) * amplitude * taper;
-      v.setLength(len + disp);
-      pos.setXYZ(i, v.x, v.y, v.z);
+/** 닫힌 점열을 이웃 평균 쪽으로 살짝 당겨 부드럽게 만든다(라플라시안 완화) */
+function smoothClosedPolyline(pts: THREE.Vector2[], iterations: number, alpha: number): THREE.Vector2[] {
+  let cur = pts;
+  const n = cur.length;
+  for (let it = 0; it < iterations; it++) {
+    const next: THREE.Vector2[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const prev = cur[(i - 1 + n) % n]!;
+      const c = cur[i]!;
+      const nxt = cur[(i + 1) % n]!;
+      next[i] = new THREE.Vector2(c.x + alpha * ((prev.x + nxt.x) / 2 - c.x), c.y + alpha * ((prev.y + nxt.y) / 2 - c.y));
     }
-    pos.needsUpdate = true;
-    geo.computeVertexNormals();
+    cur = next;
+  }
+  return cur;
+}
+
+/**
+ * 하트 윤곽을 등호 간격 폐곡선 점열로 샘플링한다.
+ *
+ * moveTo→bezierCurveTo 순서가 위(0,0.62)에서 오른쪽으로 나가는 시계 방향이라,
+ * SphereGeometry 공식이 가정하는 반시계 방향(cos,sin이 각도 증가에 따라 도는
+ * 방향)과 반대다. 그대로 두면 삼각형 감김새가 뒤집혀 법선이 안쪽을 향한다 —
+ * 뒤집어서 반시계 방향으로 맞춘다.
+ *
+ * bezierCurveTo 6개가 만나는 이음매마다 접선을 맞춰 뒀지만(위 heartShape 참고),
+ * 광택 클리어코트는 접선(1차)은 맞아도 곡률(2차)이 어긋나는 자리를 하이라이트
+ * 꺾임으로 드러낸다. 라플라시안 완화를 살짝 얹어 그 잔여 이음매 자국까지 지운다.
+ */
+function heartOutline(count: number): THREE.Vector2[] {
+  const pts = heartShape().getSpacedPoints(count);
+  if (pts.length > 1 && pts[0]!.distanceTo(pts[pts.length - 1]!) < 1e-6) pts.pop();
+  const smoothed = smoothClosedPolyline(pts, 5, 0.35);
+  smoothed.reverse();
+  return smoothed;
+}
+
+let heartGeo: THREE.BufferGeometry | null = null;
+
+export function ballGeometry(): THREE.BufferGeometry {
+  if (heartGeo) return heartGeo;
+
+  const RING_SEGMENTS = 96; // 하트 둘레 분할
+  const POLE_SEGMENTS = 40; // 앞 극 ↔ 뒤 극 분할
+  const DEPTH_RADIUS = 1.1; // 적도 하트 반지름(~1~1.3)과 비슷하게 둬야 풍선처럼 둥글다
+  const VISUAL_SCALE = 1; // 콜라이더 반지름과 정확히 일치 — 이보다 크면 옆 구슬끼리 안으로 파고든다
+  const NOTCH_FADE_POWER = 1.6; // 클수록 적도 부근에서 더 오래 하트 윤곽을 유지하다 늦게 둥글어진다
+
+  const outline = heartOutline(RING_SEGMENTS);
+  const M = outline.length;
+  // 노치·끝점의 굴곡을 거의 지운 버전 — 극 쪽 고리와 섞을 "둥근" 목표 윤곽
+  const roundOutline = smoothClosedPolyline(outline, 60, 0.5);
+
+  const grid: number[][] = [];
+  const positions: number[] = [];
+  for (let iy = 0; iy <= POLE_SEGMENTS; iy++) {
+    const theta = (iy / POLE_SEGMENTS) * Math.PI; // 0(앞 극) → π(뒤 극)
+    const rScale = Math.sin(theta);
+    const z = DEPTH_RADIUS * Math.cos(theta);
+    // 적도(rScale=1)에서 0, 극(rScale=0)에서 1 — 하트 윤곽에서 둥근 윤곽으로 섞는 비율
+    const roundT = Math.pow(THREE.MathUtils.clamp(1 - rScale, 0, 1), NOTCH_FADE_POWER);
+    const row: number[] = [];
+    for (let ix = 0; ix < M; ix++) {
+      const p = outline[ix]!;
+      const rp = roundOutline[ix]!;
+      const x = THREE.MathUtils.lerp(p.x, rp.x, roundT) * rScale;
+      const y = THREE.MathUtils.lerp(p.y, rp.y, roundT) * rScale;
+      positions.push(x, y, z);
+      row.push(positions.length / 3 - 1);
+    }
+    grid.push(row);
   }
 
-  geoCache.set(key, geo);
+  // 극 고리는 전 정점이 같은 점으로 뭉쳐 있다 — 인접한 두 삼각형 중 하나가
+  // 자동으로 면적 0이 되므로, SphereGeometry와 같은 방식으로 그쪽만 건너뛴다.
+  const indices: number[] = [];
+  for (let iy = 0; iy < POLE_SEGMENTS; iy++) {
+    for (let ix = 0; ix < M; ix++) {
+      const ix1 = (ix + 1) % M;
+      const a = grid[iy]![ix1]!;
+      const b = grid[iy]![ix]!;
+      const c = grid[iy + 1]![ix]!;
+      const d = grid[iy + 1]![ix1]!;
+      if (iy !== 0) indices.push(a, b, d);
+      if (iy !== POLE_SEGMENTS - 1) indices.push(b, c, d);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setIndex(indices);
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.center();
+
+  geo.computeBoundingSphere();
+  const r = geo.boundingSphere!.radius || 1;
+  geo.scale(VISUAL_SCALE / r, VISUAL_SCALE / r, VISUAL_SCALE / r);
+
+  geo.computeVertexNormals();
+
+  heartGeo = geo;
   return geo;
 }
 
 /* ---------------- 텍스처 ---------------- */
 
 const texCache = new Map<string, THREE.Texture>();
-
-/**
- * 로고가 있는 구슬의 텍스처.
- *
- * 주의: three의 `map`은 material.color에 곱해진다. 배경이 투명(RGB 0)이면 구슬이 검게 나온다.
- * 그래서 배경을 구슬 색으로 채운 텍스처를 만들고 material.color는 흰색으로 둔다.
- * 실제 브랜드 에셋이 오면 이 함수를 텍스처 로드로 바꾸고 배경만 색으로 칠하면 된다.
- */
-/**
- * 캡슐 데칼.
- *
- * 텍스처 1024×512가 구체에 감기므로 적도 둘레 = 1024px, 즉 **화면상 구슬 지름은 1024/π ≈ 326px**에
- * 해당한다. 레퍼런스(reports/ball-ref.jpg)에서 글자 높이는 구슬 지름의 약 13%였다 → 약 42px.
- * 이전 값은 22px 폰트(대문자 높이 16px ≈ 5%)여서 화면에서는 글자가 아니라 얼룩으로 보였고,
- * 둘레에 6번 반복해 감아 흰 띠처럼 번졌다.
- *
- * 레퍼런스의 절제도 함께 가져온다: 요소는 **감긴 워드마크 1개 + 스티커 라벨 1개**뿐이다.
- * 어느 각도에서 봐도 한 번에 하나만 읽힌다.
- */
-const DECAL_VARIANTS = 4;
-
-/**
- * 실제 캔버스 크기. 배치 좌표는 아래 DESIGN_W/H 기준으로 적고 그릴 때 축소한다 —
- * 치수를 다시 튜닝하지 않고 해상도만 바꿀 수 있다.
- *
- * 색상 8종 × 변형 4종이므로 최대 32장이 만들어진다. 1024×512면 밉맵 포함 약 89MB로
- * 과하다. 화면에서 구슬은 150px 안팎이고 이 텍스처의 적도 둘레가 지름 512/π≈163px에
- * 해당하므로 512×256으로 충분하다(약 22MB).
- */
-const TEX_W = 512;
-const TEX_H = 256;
-const DESIGN_W = 1024;
-const DESIGN_H = 512;
-
-/** 변형별 배치 — 구슬마다 데칼 위치가 같으면 더미에서 반복이 눈에 띈다 */
-const DECAL_LAYOUT = [
-  { bandV: 0.5, bandTilt: 0.05, badgeU: 0.62, badgeV: 0.3 },
-  { bandV: 0.4, bandTilt: -0.07, badgeU: 0.15, badgeV: 0.68 },
-  { bandV: 0.6, bandTilt: 0.09, badgeU: 0.84, badgeV: 0.36 },
-  { bandV: 0.46, bandTilt: -0.04, badgeU: 0.38, badgeV: 0.74 },
-] as const;
-
-/** 워드마크 띠와 스티커를 그린다. 컬러맵과 러프니스맵이 같은 배치를 공유해야 한다. */
-function drawDecal(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-  variant: number,
-  ink: string,
-  badgeFill: string,
-  badgeInk: string,
-) {
-  const L = DECAL_LAYOUT[variant % DECAL_VARIANTS]!;
-
-  // 감긴 워드마크 — 둘레에 2회. 레퍼런스도 2~3회이고 그 이상이면 띠로 뭉갠다.
-  ctx.save();
-  ctx.translate(w / 2, h * L.bandV);
-  ctx.rotate(L.bandTilt);
-  ctx.fillStyle = ink;
-  ctx.font = 'bold 48px "Segoe UI", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  for (let i = 0; i < 2; i++) {
-    ctx.fillText('aépick ✳ LUCKY DRAW', -w / 4 + (w / 2) * i, 0);
-  }
-  ctx.restore();
-
-  // 스티커 라벨 — 레퍼런스의 사각 라벨에 대응
-  ctx.save();
-  ctx.translate(w * L.badgeU, h * L.badgeV);
-  ctx.fillStyle = badgeFill;
-  ctx.beginPath();
-  ctx.roundRect(-84, -50, 168, 100, 12);
-  ctx.fill();
-  ctx.fillStyle = badgeInk;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = 'bold 52px "Segoe UI", sans-serif';
-  ctx.fillText('aépick', 0, -13);
-  ctx.font = 'bold 26px "Segoe UI", sans-serif';
-  ctx.fillText('LUCKY DRAW', 0, 25);
-  ctx.restore();
-}
-
-export function ballTexture(colorHex: string, variant = 0): THREE.Texture {
-  const key = `ball:${colorHex}:${variant}`;
-  const hit = texCache.get(key);
-  if (hit) return hit;
-
-  const c = document.createElement('canvas');
-  c.width = TEX_W;
-  c.height = TEX_H;
-  const ctx = c.getContext('2d')!;
-
-  // map은 material.color에 곱해지므로 배경을 구슬 색으로 채운다 (비우면 검게 죽는다)
-  ctx.fillStyle = colorHex;
-  ctx.fillRect(0, 0, TEX_W, TEX_H);
-
-  ctx.scale(TEX_W / DESIGN_W, TEX_H / DESIGN_H);
-  drawDecal(ctx, DESIGN_W, DESIGN_H, variant, 'rgba(255,255,255,0.92)', 'rgba(255,255,255,0.97)', '#e8446b');
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  texCache.set(key, tex);
-  return tex;
-}
-
-/**
- * 데칼 러프니스 맵.
- *
- * 인쇄된 잉크는 캡슐 표면보다 광택이 낮다. 이 차이가 없으면 글자가 "표면에 인쇄된 것"이 아니라
- * "표면에 투영된 그림"으로 보인다 — 구슬 러프니스가 0.07로 매우 낮아 특히 티가 난다.
- *
- * three.js는 material.roughness에 이 맵을 **곱한다.** 그래서 재질 러프니스를 잉크 값으로 올리고
- * 맵에서 구슬 부분을 낮춰 되돌린다. 색과 무관하므로 변형당 한 장이면 전 색상이 공유한다.
- */
-export function ballRoughnessTexture(variant: number, ballRough: number, inkRough: number): THREE.Texture {
-  const key = `ballRough:${variant}:${ballRough.toFixed(3)}:${inkRough.toFixed(3)}`;
-  const hit = texCache.get(key);
-  if (hit) return hit;
-
-  const c = document.createElement('canvas');
-  c.width = TEX_W;
-  c.height = TEX_H;
-  const ctx = c.getContext('2d')!;
-
-  const g = Math.round(255 * (ballRough / inkRough));
-  ctx.fillStyle = `rgb(${g},${g},${g})`;
-  ctx.fillRect(0, 0, TEX_W, TEX_H);
-  // 잉크·라벨 자리는 흰색(=1.0) → material.roughness가 그대로 적용된다
-  ctx.scale(TEX_W / DESIGN_W, TEX_H / DESIGN_H);
-  drawDecal(ctx, DESIGN_W, DESIGN_H, variant, '#ffffff', '#ffffff', '#ffffff');
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.NoColorSpace; // 러프니스는 선형 데이터다
-  tex.anisotropy = 4;
-  texCache.set(key, tex);
-  return tex;
-}
 
 /**
  * 벽 텍스처 — 프로스티드 아크릴 패널.

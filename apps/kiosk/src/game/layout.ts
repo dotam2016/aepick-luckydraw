@@ -8,15 +8,39 @@
  * 집게 이동은 1축(X)만. 깊이(z)는 구슬 더미에만 쓰인다.
  */
 
+/**
+ * 구슬을 화면상 크게 키워 달라는 요청 — 시각 메시만 키우면(assets.ts의 VISUAL_SCALE)
+ * 콜라이더는 그대로라 옆 구슬 메시끼리 안으로 파고든다(실제로 겪은 버그). "구슬처럼
+ * 서로 맞닿기만 하고 파고들지 않게" 하려면 콜라이더 자체를 키워야 한다 — 그러면
+ * 집게도 같은 비율로 커져야 한다(발끝 간격이 커진 구슬 지름보다 넓어야 벌린 채
+ * 내려갈 때 구슬을 감쌀 수 있다 — clawRig.ts의 CLAW_RIG.openTilt 주석 참고).
+ *
+ * 처음엔 2배(딱 요청한 크기)로 시도했다가 실측으로 막혔다: boxDepth가 5뿐이라
+ * 반지름이 배가 되면 spawnBalls()의 격자 한 줄에 겨우 2개만 들어가고, 최소
+ * 허용 구슬 수(25, packages/shared)조차 13층 높이 기둥으로 쌓여 집게 대기
+ * 위치까지 파고들었다(스크린샷으로 확인). boxDepth가 반지름 증가를 못 받아주는
+ * 게 근본 원인이라, 요청한 배율을 낮춰 이 상자 안에서 실제로 낮고 넓게
+ * 퍼지는 더미가 나오는 지점을 찾았다 — 아래 BALL_SCALE이 그 값이다. 반지름·
+ * 집게 스케일·하강 목표를 전부 같이 곱해 서로의 비율(여유 간격, 안전 마진)을
+ * 그대로 유지한다 — 부분적으로만 키우면 위 여러 실측 기반 안전 마진이 깨진다.
+ */
+const BALL_SCALE = 1.5;
+
 export const WORLD = {
-  /** 스파이크에서 확정한 폭 */
+  /** 스파이크에서 확정한 폭 — 캐비닛 크기는 구슬 확대와 무관하게 그대로 둔다 */
   boxWidth: 10.5,
   boxHeight: 13,
   boxDepth: 5,
 
-  ballRadius: 0.62,
-  /** PC 타깃으로 확정되어 기획서 §7.3의 25~40 범위를 상향했다 */
-  ballCount: 78,
+  ballRadius: 0.62 * BALL_SCALE,
+  /**
+   * 78개는 이전(반지름 0.62) 밀도에 맞춘 값이었다 — 반지름이 커지면 부피가 늘어
+   * 그대로 두면 더미가 상자 높이를 넘친다. `packages/shared`의 validateGameConfig가
+   * 허용하는 최소값(25)까지 낮췄다 — 그 하한 자체가 "더미가 빈약해 보이는 지점"
+   * 이라는 뜻이라, 이전보다 큰 구슬 25개면 오히려 더미는 이전보다 꽉 차 보인다
+   * (§7.3, packages/shared/src/rules.ts 참고).
+   */
+  ballCount: 25,
 
   /**
    * 집게 X 이동 한계.
@@ -24,20 +48,28 @@ export const WORLD = {
    * 제약은 **활짝 벌린 발끝과 벽 사이 간격**이다. 이 간격이 좁으면 더미 안의 구슬이
    * 끼여 밖으로 밀려난다(폭 9.5 시절 실측: 간격 0.83에서 132회 중 안전망 279회 발동).
    *
-   * 폭이 9.5 → 10.5가 되어 벽이 4.75 → 5.25로 물러났으므로 한계도 같이 넓힌다.
-   * 상자만 넓히고 이 값을 두면 집게가 양쪽 끝 구슬에 닿지 못한다.
-   * 간격 = 5.25 − 3.4 − 발끝 반경 0.975 = 0.875 — 이전(0.885)과 사실상 같다.
+   * 상자 폭은 그대로인데 발끝 반경(clawScale에 비례)이 BALL_SCALE배가 됐으므로,
+   * 같은 간격(0.875)을 유지하려면 한계를 그만큼 좁혀야 한다:
+   * 간격 = 5.25 − clawMaxX − 발끝 반경(0.975×1.5=1.4625) = 0.875 → clawMaxX ≈ 2.91.
    */
-  clawMaxX: 3.4,
-  clawHomeY: 8.5,
+  clawMaxX: 2.91,
+  /**
+   * 대기 높이. 집게 자체가 clawScale만큼 커져 팔이 아래로 더 늘어지는 데다,
+   * boxDepth 제약 때문에 더미도 이전보다 위로 더 쌓인다(위 BALL_SCALE 주석) —
+   * 이전 위치(8.5)에 두면 발끝이 더미 위쪽에 파묻힌 것처럼 보인다. 실제
+   * 렌더(kiosk-shot)로 더미 꼭대기와 발끝 사이 여유를 눈으로 확인해 가며 올렸다.
+   */
+  clawHomeY: 10.3,
   /**
    * 하강 목표.
-   * 발끝이 바닥에 놓인 구슬(상단 y=1.24)보다 아래로 내려가면 구슬을 바닥에 짓눌러
+   * 발끝이 바닥에 놓인 구슬 상단보다 아래로 내려가면 구슬을 바닥에 짓눌러
    * 솔버가 바닥 밑으로 밀어내는 사고가 난다(실측: 40회 중 2회, y=-884로 무한 낙하).
-   * 발끝 y = clawDropY − pivot(0.435) − armLen(1.044) 이므로 2.9 이상을 유지한다.
+   * 구슬 반지름·집게(pivot·arm 길이)가 전부 BALL_SCALE배 커졌으므로 이전 하강
+   * 목표(2.95)도 그대로 같은 배율로 키운다 — 발끝 y = clawDropY − pivot − armLen의
+   * 우변이 통째로 그 배율만큼 커지므로 좌변도 같이 커져야 같은 여유 마진이 유지된다.
    */
-  clawDropY: 2.95,
-  clawScale: 1.45,
+  clawDropY: 2.95 * BALL_SCALE,
+  clawScale: 1.45 * BALL_SCALE,
   railY: 11.4,
 
   gravity: -24,
@@ -47,8 +79,8 @@ export const WORLD = {
 export const SCREEN = {
   width: 1080,
   height: 1920,
-  fieldHeight: 1344,
-  controllerHeight: 576,
+  fieldHeight: 1301,
+  controllerHeight: 619,
 } as const;
 
 /**
@@ -120,20 +152,18 @@ export const MATERIAL = {
    * 재질 기본값 — 비주얼 스파이크 패널에서 조절해 확정한 값.
    * 러프니스를 크게 낮춰(0.32→0.07) 구슬이 베이크된 캐비닛 환경을 또렷하게 반사한다.
    * 환경 베이크가 들어간 뒤에야 성립하는 값이다 — 반사할 대상이 없으면 그냥 검게 죽는다.
+   *
+   * 하트 전환 후: 유리사탕(glossy candy) 레퍼런스에 맞춰 clearcoat을 0.71→0.95로
+   * 올렸었는데, clearcoatRoughness를 0.06(거의 완전 거울)까지 낮추자 문제가
+   * 생겼다 — 하트 로프트 지오메트리에 남은 아주 미세한 곡률 변화(노치 자리)까지
+   * 거울처럼 또렷하게 반사해, 뭉근한 하이라이트가 아니라 표면을 가로지르는
+   * 딱딱한 선으로 보였다(clearcoat을 0으로 끄면 그 선이 사라지는 것으로 확인).
+   * 레퍼런스의 하이라이트도 실은 핀포인트가 아니라 부드러운 얼룩이다 —
+   * clearcoatRoughness를 0.15로 올려 반사를 부드럽게 뭉개서 해결한다.
    */
   ballRoughness: 0.07,
-  metalRoughness: 0.2,
-  clearcoat: (globalThis as any).__CLEARCOAT__ ?? 0.71,
-  ribAmplitude: 0.15,
-  ribCount: 12,
-  /** 은색 캡슐 비율. 0.26 이상이면 흰색·은색이 화면을 지배한다 */
-  metalRatio: 0.18,
-  decalRatio: 0.26,
-  /**
-   * 인쇄 데칼의 러프니스. 구슬(0.07)보다 확실히 높아야 잉크가 표면에 인쇄된 것으로 읽힌다.
-   * 같으면 글자가 "표면에 투영된 그림"처럼 보인다.
-   */
-  inkRoughness: 0.42,
+  clearcoat: (globalThis as any).__CLEARCOAT__ ?? 0.85,
+  clearcoatRoughness: (globalThis as any).__CLEARCOAT_ROUGH__ ?? 0.15,
 } as const;
 
 export const LIGHTING = {
@@ -376,32 +406,24 @@ export const POST = {
 } as const;
 
 /**
- * 캡슐 색과 등장 빈도.
+ * 하트 캡슐 색과 등장 빈도.
  *
- * `tools/palette.mjs`로 레퍼런스와 현재 화면의 지배색을 같은 방법으로 클러스터링해 맞춘 값.
- * 렌더된 색은 알베도가 아니다(조명·환경 반사·톤 매핑을 거친다) — 그래서 양쪽을 같은
- * 방법으로 재고 차이만큼 알베도를 옮겼다.
- *
- *   레퍼런스 더미  S 61.8% · L 64.9%
- *   이전 팔레트    S 47.3% · L 50.2%   ← 어둡고 탁했다
- *
- * 두 가지를 바꿨다.
- *  1) 각 색을 더 밝고 선명하게. 렌더가 채도를 약 20포인트 떨어뜨리므로 알베도는 그만큼 높게 잡는다.
- *  2) **밝은 색의 비중을 올렸다.** 평균 밝기는 색 자체보다 분포가 좌우한다 —
- *     이전에는 가장 어두운 빨강이 전체 가중치의 29%를 차지했다.
+ * 유리사탕(glossy candy heart) 파스텔 톤. 이전 팔레트(각 인덱스)를 밝기 순위 그대로
+ * 파스텔로 치환했다 — 배열 순서·weight는 그대로 두고 hex만 바꿨으므로 색 선택 로직은
+ * 손대지 않는다. 지정된 5색(FBB8C6/D8B9EA/F7B990/F5828F/B7D4F0) 외 3색은 같은
+ * 파스텔 계열(S 55~65%)로 밝기 간극을 메우려고 추가했다: 더스티로즈(가장 어두움),
+ * 버터옐로, 블러시화이트(가장 밝음).
  */
 export const BALL_PALETTE: { color: string; weight: number }[] = [
-  { color: '#f9564a', weight: 3.6 }, // 빨강
-  { color: '#fbfaff', weight: 2.4 }, // 흰색
-  { color: '#56b4fa', weight: 3.0 }, // 하늘
-  { color: '#9ee256', weight: 2.6 }, // 라임 — 이전의 어두운 초록(#4cb85c)을 대체
-  { color: '#f7ef7e', weight: 3.4 }, // 노랑 — 비중 상향
-  { color: '#bb90f2', weight: 2.0 }, // 보라
-  { color: '#5ce8ce', weight: 1.2 }, // 민트
-  { color: '#fd85c6', weight: 1.0 }, // 분홍
+  { color: '#D97A88', weight: 3.6 }, // 더스티로즈 (추가) — 이전 빨강 자리
+  { color: '#F6EEF3', weight: 2.4 }, // 블러시화이트 (추가) — 이전 흰색 자리
+  { color: '#F5828F', weight: 3.0 }, // 진한 핑크 — 이전 하늘색 자리
+  { color: '#B7D4F0', weight: 2.6 }, // 베이비블루 — 이전 라임 자리
+  { color: '#F5E6A8', weight: 3.4 }, // 버터옐로 (추가) — 이전 노랑 자리
+  { color: '#F7B990', weight: 2.0 }, // 피치오렌지 — 이전 보라 자리
+  { color: '#FBB8C6', weight: 1.2 }, // 핑크 파스텔 — 이전 민트 자리
+  { color: '#D8B9EA', weight: 1.0 }, // 라벤더 — 이전 분홍 자리
 ];
-
-export const METAL_COLOR = '#dfe4ea';
 
 const CUM_WEIGHTS = (() => {
   const out: number[] = [];
@@ -421,8 +443,6 @@ export function pickColorIndex(r: number): number {
   }
   return CUM_WEIGHTS.length - 1;
 }
-
-export type BallKind = 'smooth' | 'ribbed' | 'coiled';
 
 /** 저사양 대비 품질 단계 — §13 프레임 저하 시 자동 축소 */
 export interface QualityLevel {

@@ -14,8 +14,6 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import {
   ballGeometry,
-  ballRoughnessTexture,
-  ballTexture,
   contactShadowTexture,
   wallNormalTexture,
   wallRoughnessTexture,
@@ -28,7 +26,6 @@ import {
   ENV,
   LIGHTING,
   MATERIAL,
-  METAL_COLOR,
   FLOOR_LIGHT,
   THEME,
   WALL,
@@ -355,35 +352,45 @@ function Balls({
 }) {
   const state = useMemo(() => game.getRenderState(), [game]);
 
+  /*
+   * 하트가 참고 이미지처럼 항상 정면으로 보이게 한다.
+   *
+   * 물리가 굴려 놓은 회전(b.q)을 그대로 쓰면 하트가 임의의 각도로 누워 옆면·뒷면이
+   * 보이고, 더미 속에서 이웃 하트에 걸쳐 보이는 조각도 무슨 각도인지 알아볼 수 없는
+   * 모양이 된다. 대신 하트의 정면(로컬 +Z)이 항상 카메라 쪽을 향하도록 고정 회전을
+   * 씌우고, 화면 평면에서만(카메라 축 기준 Z-롤) 구슬마다 다르게 살짝 돌려 더미가
+   * 스티커를 흩뿌린 것처럼 자연스러운 변화를 갖게 한다. 카메라가 게임 중 고정이라
+   * 한 번만 계산해 두면 된다(프레임마다 다시 구할 필요 없음).
+   */
+  const faceCameraQuat = useMemo(() => {
+    const camPos = new THREE.Vector3(...CAMERA.position);
+    const camTarget = new THREE.Vector3(...CAMERA.target);
+    const heartFacing = camPos.clone().sub(camTarget).normalize();
+    return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), heartFacing);
+  }, []);
+  const ballQuats = useMemo(
+    () =>
+      state.balls.map((b) =>
+        faceCameraQuat.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), b.spinZ)),
+      ),
+    [state.balls, faceCameraQuat],
+  );
+
   const materials = useMemo(() => {
     const map = new Map<string, THREE.Material>();
     return {
-      get(isMetal: boolean, colorIndex: number, hasDecal: boolean, variant: number) {
-        const useTex = hasDecal && !isMetal;
-        // 데칼이 없으면 변형은 의미가 없다 — 키에서 빼야 같은 재질을 공유한다
-        const key = `${isMetal}:${colorIndex}:${useTex ? variant : 'plain'}`;
+      get(colorIndex: number) {
+        const key = `${colorIndex}`;
         let m = map.get(key);
         if (m) return m;
-        const base = isMetal ? METAL_COLOR : BALL_PALETTE[colorIndex % BALL_PALETTE.length]!.color;
-        /*
-         * 인쇄 잉크는 캡슐 표면보다 무광이다. three.js는 roughness에 맵을 곱하므로
-         * 재질 러프니스를 잉크 값으로 올리고 맵에서 구슬 부분을 낮춰 되돌린다.
-         */
+        const base = BALL_PALETTE[colorIndex % BALL_PALETTE.length]!.color;
+        // 광택 캔디 하트 — 무늬/텍스처 없이 단색 + 클리어코트로 하이라이트를 낸다
         m = new THREE.MeshPhysicalMaterial({
-          // 텍스처는 color에 곱해지므로 텍스처를 쓸 때는 color를 흰색으로 둔다
-          color: useTex ? '#ffffff' : base,
-          map: useTex ? ballTexture(base, variant) : null,
-          roughnessMap: useTex
-            ? ballRoughnessTexture(variant, MATERIAL.ballRoughness, MATERIAL.inkRoughness)
-            : null,
-          metalness: isMetal ? 0.88 : 0.02,
-          roughness: isMetal
-            ? MATERIAL.metalRoughness
-            : useTex
-              ? MATERIAL.inkRoughness
-              : MATERIAL.ballRoughness,
-          clearcoat: isMetal ? 0 : MATERIAL.clearcoat,
-          clearcoatRoughness: 0.25,
+          color: base,
+          metalness: 0,
+          roughness: MATERIAL.ballRoughness,
+          clearcoat: MATERIAL.clearcoat,
+          clearcoatRoughness: MATERIAL.clearcoatRoughness,
           envMapIntensity: LIGHTING.envIntensity,
         });
         map.set(key, m);
@@ -405,7 +412,8 @@ function Balls({
     }
   }, [baked, materials]);
 
-  // 물리가 매 프레임 위치·회전을 바꾸므로 메시를 직접 동기화한다.
+  // 물리가 매 프레임 위치를 바꾸므로 메시를 직접 동기화한다(회전은 항상 카메라를
+  // 향해 고정이라 매 프레임 다시 씌울 필요가 없다).
   // React 리렌더로 처리하면 구슬 78개 × 60fps가 낭비다.
   const refs = useRef<(THREE.Mesh | null)[]>([]);
   useFrame(() => {
@@ -415,7 +423,6 @@ function Balls({
       const b = s.balls[i]!;
       if (!m) continue;
       m.position.set(b.x, b.y, b.z);
-      m.quaternion.set(b.q[0], b.q[1], b.q[2], b.q[3]);
     }
   });
 
@@ -428,9 +435,10 @@ function Balls({
             refs.current[i] = el;
           }}
           position={[b.x, b.y, b.z]}
+          quaternion={ballQuats[i]}
           scale={b.r}
-          geometry={ballGeometry(b.kind, MATERIAL.ribCount, MATERIAL.ribAmplitude)}
-          material={materials.get(b.isMetal, b.colorIndex, b.hasDecal, b.decalVariant)}
+          geometry={ballGeometry()}
+          material={materials.get(b.colorIndex)}
           castShadow={shadows}
           receiveShadow={shadows}
         />

@@ -333,7 +333,6 @@ export default function App() {
       >
         {(screen === 'WAITING' || screen === 'SESSION_PREPARE') && (
           <Attract
-            config={config}
             online={online}
             blockedReason={blockedReason}
             onOperatorEnter={() => {
@@ -344,7 +343,9 @@ export default function App() {
           />
         )}
 
-        {session && ['READY', 'AIM', 'DROP', 'GRAB', 'LIFT', 'REVEAL'].includes(screen) && (
+        {/* RESULT까지 남겨 둔다 — 결과 화면 배경이 투명해서 그 뒤로 기계가 그대로 보여야 한다.
+            phase가 DONE이면 Play의 rAF 루프는 스스로 멈추므로 추가 비용은 없다. */}
+        {session && ['READY', 'AIM', 'DROP', 'GRAB', 'LIFT', 'REVEAL', 'RESULT'].includes(screen) && (
           <Play
             session={session}
             quality={quality}

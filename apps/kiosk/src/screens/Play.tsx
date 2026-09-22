@@ -5,17 +5,19 @@
  * ClawGame(Rapier 3D)이 물리와 페이즈를 소유하고, 이 컴포넌트는
  * 렌더 루프·입력·HUD·상위 보고만 담당한다.
  *
- * 화면 분할: 상단 1080×1344 3D 필드 / 하단 1080×576 조작부.
+ * 렌더러는 2D 스프라이트 스킨(Cabinet2D)이다. 3D Scene은 파일로 남겨 뒀지만
+ * 화면에는 쓰지 않는다 — 디자인 에셋이 전부 평면 렌더라 3D 하트·집게와 섞으면
+ * 재질이 서로 튄다.
+ *
+ * 화면 분할: 상단 1080×1301 필드 / 하단 1080×619 조작부.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { Bloom, DepthOfField, EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing';
-import { ToneMappingMode } from 'postprocessing';
 import type { CreateSessionResponse } from '@aepick/shared';
+import { assetUrl } from '../assetUrl';
 import { ClawGame, initPhysics, physicsDebug, type Phase, type PlayOutcome } from '../game/clawGame';
-import { Scene } from '../game/Scene';
-import { CAMERA, POST, QUALITY, resolveBallCount, type QualityLevel } from '../game/layout';
+import { Cabinet2D } from '../game/Cabinet2D';
+import { resolveBallCount } from '../game/layout';
 import { Controller } from './Controller';
 import { t } from '../i18n';
 
@@ -32,54 +34,6 @@ export interface PlayProps {
   onPhase?: (phase: Phase) => void;
   onQualityDown?: () => void;
   debug?: boolean;
-}
-
-/**
- * 후처리.
- *
- * **톤 매핑은 여기서 해야 한다.** three.js r169는 렌더타깃에 그릴 때 톤 매핑을 강제로 끈다:
- *
- *   let toneMapping = NoToneMapping;
- *   if (material.toneMapped) {
- *     if (currentRenderTarget === null || currentRenderTarget.isXRRenderTarget) {
- *       toneMapping = renderer.toneMapping;
- *     }
- *   }
- *
- * EffectComposer는 항상 렌더타깃에 그리므로 `gl.toneMapping`·`gl.toneMappingExposure`가
- * 통째로 무시된다. 그래서 지금까지 **톤 매핑이 전혀 걸려 있지 않았고**, 하이라이트가
- * 롤오프 없이 그대로 잘렸다 — 벽 채도를 올리려 할 때마다 부딪힌 포화 한계의 정체다.
- */
-function Post({ q }: { q: QualityLevel }) {
-  if (!q.bloom && !q.dof && !q.ao) return null;
-  return (
-    <EffectComposer enableNormalPass multisampling={0}>
-      {q.ao ? <N8AO
-          aoRadius={POST.aoRadius}
-          intensity={POST.aoIntensity}
-          color={POST.aoColor}
-          distanceFalloff={POST.aoFalloff}
-          quality="medium"
-        /> : <></>}
-      {q.bloom ? (
-        <Bloom
-          intensity={POST.bloomIntensity}
-          luminanceThreshold={POST.bloomThreshold}
-          luminanceSmoothing={POST.bloomSmoothing}
-          mipmapBlur
-        />
-      ) : (
-        <></>
-      )}
-      {q.dof ? (
-        <DepthOfField target={POST.dofTarget} focalLength={POST.dofFocalLength} bokehScale={POST.dofBokehScale} />
-      ) : (
-        <></>
-      )}
-      {/* 반드시 마지막 — 앞 효과들은 톤 매핑 전 값에서 동작해야 한다 */}
-      <ToneMapping mode={ToneMappingMode.NEUTRAL} />
-    </EffectComposer>
-  );
 }
 
 export function Play({
@@ -103,7 +57,6 @@ export function Play({
   const finishedRef = useRef(false);
   const minFpsRef = useRef(999);
   const holdRef = useRef<-1 | 1 | 0>(0);
-  const q = QUALITY[quality];
 
   /* ---------- 엔진 생성 (Rapier WASM 초기화가 비동기다) ---------- */
   useEffect(() => {
@@ -222,37 +175,33 @@ export function Play({
 
   const aimTotal = session.game.aimSeconds * 1000;
   const inputActive = phase === 'AIM';
+  /* 결과화면이 위에 덮이는 구간. 기계는 그대로 두되 판중 UI는 걷는다 */
+  const finished = phase === 'DONE';
 
   return (
     <div className="layer">
       <div className="field">
-        {game && (
-          <Canvas
-            dpr={q.dpr}
-            shadows={q.shadows}
-            frameloop="always"
-            gl={{ antialias: true, powerPreference: 'high-performance' }}
-            camera={{ fov: CAMERA.fov, position: CAMERA.position, near: 0.1, far: 200 }}
-          >
-            <Scene game={game} shadows={q.shadows} />
-            <Post q={q} />
-          </Canvas>
-        )}
+        {game && <Cabinet2D game={game} />}
 
         {/* 상단 HUD — 1회 플레이 배지 */}
-        <div className="hud">
-          <div className="badge-once">{t('aim.oncePerPlay')}</div>
-        </div>
+        {!finished && (
+          <div className="hud">
+            <div className="badge-once">{t('aim.oncePerPlay')}</div>
+          </div>
+        )}
 
         {/* 튜토리얼 오버레이 (G-01 READY) */}
         {phase === 'READY' && (
           <div className="tutorial">
             <div className="tutorial-card">
-              <p className="step">① {t('tutorial.line1')}</p>
-              <p className="step">② {t('tutorial.line2')}</p>
-              <div className="tutorial-dots">
-                <i className="on" />
-                <i className="on" />
+              <img src={assetUrl('/assets/cabinet/Guide.png')} alt="" />
+              <div className="tut-step tut-step1">
+                <span className="tut-num">1</span>
+                {t('tutorial.line1')}
+              </div>
+              <div className="tut-step tut-step2">
+                <span className="tut-num">2</span>
+                {t('tutorial.line2')}
               </div>
             </div>
           </div>
@@ -277,6 +226,7 @@ test    ${session.isTest ? 'YES' : 'no'}`}
         remainingMs={aimLeft}
         totalMs={aimTotal}
         active={inputActive}
+        finished={finished}
         onHold={handleHold}
         onDrop={handleDrop}
       />

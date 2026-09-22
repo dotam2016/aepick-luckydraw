@@ -1,5 +1,30 @@
 /* AEPICK Lucky Draw — 키오스크 (1080×1920 설계, Safe Area 비례 대응) */
 
+/* Quicksand(SIL OFL) — 둥근 서체. 키오스크가 오프라인일 수 있어 CDN 대신 번들한다.
+   폰트를 public/이 아니라 src/에 두는 이유: public 자산을 가리키는 CSS url()은
+   base가 '/kiosk/'인 빌드에서 재작성되지 않는다(assetUrl.ts의 주석과 같은 함정).
+   src/ 아래면 Vite가 해시를 붙이고 base까지 맞춰 준다.
+   베트남어 성조는 별도 서브셋에 있으므로 두 벌 모두 필요하다. */
+@font-face {
+  font-family: 'Quicksand';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/quicksand-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1,
+    U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Quicksand';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./assets/fonts/quicksand-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
+    U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
 :root {
   /* Aepick 브랜드 토큰 — `Aepick 6core Value` 프로젝트 확정값 (단일 핑크 시스템) */
   --ink: #26191e;
@@ -67,13 +92,13 @@ body {
   top: 0;
   left: 0;
   width: 1080px;
-  height: 1344px;
+  height: 1301px;
   overflow: hidden;
 }
 .field canvas {
   display: block;
   width: 1080px !important;
-  height: 1344px !important;
+  height: 1301px !important;
 }
 
 /* ---------- 공통 ---------- */
@@ -102,49 +127,26 @@ body {
 
 /* ---------- 대기화면 W-00 ---------- */
 
-.attract-video {
-  position: absolute;
-  inset: 0;
-  width: 1080px;
-  height: 1920px;
-  object-fit: cover;
-}
-.attract-fallback {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
-}
-
 .attract-brand {
   position: absolute;
-  top: 62px;
+  top: 611px;
   left: 0;
   right: 0;
   text-align: center;
   z-index: 5;
 }
-.attract-logo {
-  font-size: 36px;
-  letter-spacing: 14px;
-  color: var(--ink-soft);
-  font-weight: 600;
-}
 .attract-title {
-  font-size: 108px;
-  font-weight: 800;
-  letter-spacing: -2px;
-  margin: 2px 0 0;
-  background: linear-gradient(180deg, #ff7ba3 0%, #c33a63 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.attract-sub {
-  font-size: 34px;
-  color: var(--ink-soft);
-  margin-top: 2px;
+  position: relative;
+  top: -91px;
+  left: -8px;
+  display: block;
+  width: 900px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
 }
 
+/* 이벤트 종료·점검·오프라인일 때만 뜬다 */
 .attract-notice {
   position: absolute;
   bottom: 210px;
@@ -158,6 +160,7 @@ body {
   font-size: 44px;
   font-weight: 700;
   color: var(--ink);
+  z-index: 20;
 }
 .attract-notice small {
   display: block;
@@ -165,24 +168,6 @@ body {
   font-weight: 500;
   color: var(--ink-soft);
   margin-top: 14px;
-}
-
-.prize-strip {
-  position: absolute;
-  bottom: 96px;
-  left: 60px;
-  right: 60px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-}
-.prize-chip {
-  padding: 12px 22px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.75);
-  font-size: 26px;
-  color: var(--ink-soft);
-  font-weight: 600;
 }
 
 /* 숨김 핫스팟 — 운영자 진입 (§6.1) */
@@ -379,43 +364,57 @@ body {
   position: absolute;
   inset: 0;
   z-index: 40;
-  background: rgba(40, 15, 28, 0.55);
   display: grid;
   place-items: center;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(6px);
+  background: rgba(255, 240, 246, 0.18);
 }
 .tutorial-card {
+  position: relative;
   width: 820px;
-  padding: 70px 60px;
-  border-radius: 44px;
-  background: #fff;
-  box-shadow: var(--shadow);
+}
+.tutorial-card img {
+  position: static;
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* Guilde.png는 이제 빈 액자다(점선과 하트만 그림에 있다). 문구는 HTML로 얹는다.
+   세로 기준은 %라 액자 크기가 바뀌어도 같이 따라간다. */
+.tut-step {
+  position: absolute;
+  left: 8%;
+  right: 8%;
   text-align: center;
-}
-.tutorial-card .step {
-  font-size: 46px;
+  font-family: 'Quicksand', 'Segoe UI', sans-serif;
   font-weight: 700;
-  color: var(--ink);
-  margin: 0 0 20px;
+  font-size: 43px;
+  line-height: 1.32;
+  /* 문구의 \n을 줄바꿈으로 살린다 — 어디서 끊을지는 언어별로 사전이 정한다 */
+  white-space: pre-line;
 }
-.tutorial-card .step:last-of-type {
-  margin-bottom: 0;
-  color: var(--brand-deep);
+.tut-step1 {
+  top: 31%;
+  color: #3b2f2c;
 }
-.tutorial-dots {
-  margin-top: 42px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
+.tut-step2 {
+  top: 63%;
+  color: #e94f43;
 }
-.tutorial-dots i {
-  width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  background: rgba(200, 150, 175, 0.35);
-}
-.tutorial-dots i.on {
-  background: var(--brand);
+/* vertical-align:6px은 실측값 — 43px 본문에서 원의 중심이 글줄 중심과 정확히 맞는다.
+   `middle`은 x-height 기준이라 5px 뜬다. */
+.tut-num {
+  display: inline-grid;
+  place-items: center;
+  width: 45px;
+  height: 45px;
+  margin-right: 14px;
+  vertical-align: 6px;
+  border: 3px solid #e94f43;
+  border-radius: 50%;
+  color: #e94f43;
+  font-size: 28px;
+  line-height: 1;
 }
 
 /* ---------- 결과화면 R-00 ---------- */
@@ -424,121 +423,99 @@ body {
   position: absolute;
   inset: 0;
   z-index: 50;
+  overflow: hidden;
+}
+.result.win,
+.result.miss {
+  background: transparent;
+}
+/* 콘텐츠는 필드 영역(상단 1301px)에만 두고, 조작부는 실제 게임과 동일하게 하단에 남긴다 */
+.result-field {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1080px;
+  height: 1301px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 0 60px;
   text-align: center;
-}
-.result.win {
-  background: radial-gradient(circle at 50% 34%, #fff6da 0%, #ffe3ee 46%, #f7d3e4 100%);
-}
-.result.miss {
-  background: radial-gradient(circle at 50% 40%, #f4f6fb 0%, #eae9f4 100%);
+  overflow: hidden;
 }
 
-.result-title {
-  font-size: 118px;
-  font-weight: 800;
-  letter-spacing: -1px;
-  margin: 0;
-  line-height: 1.05;
-}
-.result.win .result-title {
-  background: linear-gradient(180deg, #ffb43c 0%, #e0682c 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.result.miss .result-title {
-  color: #6e7590;
+/* 당첨 타이틀은 이미지(Chucmung.png). 실패 화면은 그대로 텍스트를 쓴다. */
+/* 흐름에서 빼고 필드 기준 절대 위치로 고정한다 — 가운데 정렬 flex 안에서는
+   top을 직접 줄 수 없기 때문. */
+.result-title-img {
+  position: absolute;
+  top: 300px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: block;
+  width: 700px;
+  max-width: 100%;
+  height: auto;
 }
 
-.tier-pill {
-  margin-top: 28px;
-  padding: 16px 44px;
-  border-radius: 999px;
-  font-size: 40px;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--brand-deep);
-}
-
+/* 배경 프레임(Vien.png)이 테두리·그림자·둥근 모서리를 모두 갖고 있어 CSS로 다시 그리지 않는다.
+   이미지 URL은 base('/kiosk/') 때문에 CSS가 아니라 Result.tsx에서 assetUrl로 넣는다. */
 .prize-box {
   margin-top: 46px;
   width: 100%;
-  max-width: 860px;
+  max-width: 645px;
+  /* 프레임 원본 비율(1676×1217)로 상자를 고정한다. 높이를 내용에 맡기면
+     background-size:100% 100% 가 리본·무지개를 늘려 버린다. */
+  aspect-ratio: 1676 / 1217;
   padding: 54px 46px;
-  border-radius: 44px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
+/* 배경 타일 없이 선물 이미지만 — 프레임(Vien.png)이 이미 배경 역할을 한다.
+   object-fit:contain 이라 슬롯 비율이 달라져도 그림은 찌그러지지 않는다. */
 .prize-visual {
+  display: block;
   width: 260px;
-  height: 260px;
-  margin: 0 auto 30px;
-  border-radius: 36px;
-  background: linear-gradient(150deg, #ffd9e6, #ffb7cf);
-  display: grid;
-  place-items: center;
-  font-size: 120px;
+  height: 200px;
+  margin: 0 auto 24px;
+  object-fit: contain;
 }
 .prize-name {
-  font-size: 62px;
-  font-weight: 800;
+  font-family: 'Quicksand', 'Segoe UI', sans-serif;
+  font-size: 40px;
+  font-weight: 700;
   color: var(--ink);
   line-height: 1.2;
+  margin-top: -24px;
 }
 
-.code-box {
-  margin-top: 42px;
-  padding: 34px 40px 40px;
-  border-radius: 36px;
-  background: #2c1622;
-  color: #fff;
+/* 실패 화면도 당첨 화면과 같은 방식(Result.tsx가 assetUrl로 배경을 얹는다)으로
+   Vien2.png 액자를 두른다. 프레임 원본 비율(1676×1217)은 prize-box와 동일하다. */
+.result-miss-box {
+  margin-top: 46px;
   width: 100%;
-  max-width: 860px;
+  max-width: 645px;
+  aspect-ratio: 1676 / 1217;
+  padding: 48px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
-.code-box .label {
-  font-size: 28px;
-  opacity: 0.75;
-  letter-spacing: 2px;
-}
-.code-box .code {
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: 130px;
-  font-weight: 800;
-  letter-spacing: 16px;
-  line-height: 1.15;
-  margin-top: 6px;
-}
-.code-box .hint {
-  font-size: 28px;
-  opacity: 0.8;
-  margin-top: 10px;
-}
-
+/* pre-line: 문구의 \n 을 줄바꿈으로 살린다(vi 문구가 두 줄로 끊긴다) */
 .result-miss-body {
-  font-size: 46px;
-  color: #6e7590;
-  margin-top: 30px;
-}
-
-.result-progress {
-  position: absolute;
-  bottom: 78px;
-  left: 60px;
-  right: 60px;
-  height: 10px;
-  border-radius: 99px;
-  background: rgba(120, 90, 110, 0.18);
-  overflow: hidden;
-}
-.result-progress i {
-  display: block;
-  height: 100%;
-  background: rgba(120, 90, 110, 0.5);
+  font-family: 'Quicksand', 'Segoe UI', sans-serif;
+  font-size: 54px;
+  font-weight: 700;
+  color: #000000;
+  white-space: pre-line;
 }
 
 .test-watermark {
@@ -764,24 +741,30 @@ body {
 
 /* ---------------- 조작부 (하단 576px, 레퍼런스 컨트롤러 스타일) ---------------- */
 
+/* 2D 스킨 — 패널은 디자인 스프라이트를 그대로 깐다(스티커까지 구워져 있다) */
 .controller {
   position: absolute;
-  top: 1344px;
+  top: 1301px;
   left: 0;
   width: 1080px;
-  height: 576px;
-  padding: 30px 44px 36px;
+  height: 619px;
+  padding: 18px 44px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
   z-index: 12;
-  background:
-    radial-gradient(120% 70% at 30% 0%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 60%),
-    linear-gradient(168deg, #fdf2f5 0%, #f0dbe2 38%, #fbeef2 62%, #e8d0d9 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 -14px 40px rgba(120, 70, 95, 0.16) inset;
   overflow: hidden;
 }
+.ctl-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1080px;
+  height: 619px;
+  pointer-events: none;
+}
+/* 스티커가 패널 이미지에 이미 들어 있어 문자 장식은 더 이상 필요 없다 */
+.controller .deco { display: none; }
 
 .controller .deco {
   position: absolute;
@@ -795,128 +778,195 @@ body {
 .controller .d3 { top: 9%; right: 9%; }
 .controller .d4 { bottom: 13%; left: 5%; }
 
+/* 타이머·게이지·안내문은 layout-test.html과 **같은 절대 좌표**로 세운다.
+   flex 흐름에 맡기면 벤치의 barY 같은 값이 그대로 옮겨오지 않는다 —
+   실제로 게이지가 벤치보다 25px 내려가 타이머와 벌어졌다.
+   좌표는 조작부(top:1301) 기준이라 벤치의 스테이지 좌표에서 1301을 뺀 값이다. */
 .ctl-timer {
+  position: absolute;
+  left: 50%;
+  top: 17px; /* 벤치 timerY 1318 */
+  transform: translate(-50%, -4px);
+  width: 240px;
+  box-sizing: border-box;
+  padding: 8px 0;
+  text-align: center;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 232, 240, 0.55) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 6px 14px rgba(196, 84, 120, 0.22),
+    inset 0 3px 5px rgba(255, 255, 255, 0.95),
+    inset 0 -10px 16px rgba(224, 140, 164, 0.28);
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 54px;
   font-weight: 800;
-  color: var(--ink);
-  letter-spacing: 1px;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  color: #ff8177;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
   font-variant-numeric: tabular-nums;
 }
 .ctl-timer.hurry {
-  color: var(--brand-deep);
+  color: #e0335f;
 }
 
 .ctl-timerbar {
-  width: 420px;
-  height: 8px;
-  border-radius: 99px;
-  background: rgba(190, 150, 165, 0.3);
+  position: absolute;
+  left: 330px; /* 벤치 barX */
+  top: 93px; /* 벤치 barY 1394 */
+  width: 420px; /* 벤치 barW */
+  height: 36px;
+  box-sizing: border-box;
+  padding: 4px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #ffdce8 100%);
+  border: 1.5px solid #ffffff;
+  box-shadow:
+    0 4px 10px rgba(196, 84, 120, 0.18),
+    inset 0 2px 4px rgba(255, 255, 255, 0.9),
+    inset 0 -6px 10px rgba(224, 140, 164, 0.22);
   overflow: hidden;
-  margin-top: 8px;
 }
 .ctl-timerbar i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #ff9dbb, var(--brand));
+  border-radius: 999px;
+  background: #ff8177;
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.65),
+    inset 0 -4px 6px rgba(150, 20, 55, 0.3);
   transition: width 0.1s linear;
 }
 .ctl-timerbar.hurry i {
-  background: linear-gradient(90deg, #ff6f8f, var(--brand-deep));
+  background: linear-gradient(180deg, #ff7a97 0%, var(--brand-deep) 55%, #c81b45 100%);
 }
 
-.ctl-row {
-  flex: 1;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-}
-
-.dpad {
-  display: flex;
-  gap: 18px;
-}
-
-.pad {
-  width: 148px;
-  height: 148px;
-  border-radius: 50%;
-  border: 0;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(circle at 34% 26%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 46%),
-    linear-gradient(180deg, #fbe9ef 0%, var(--brand) 74%);
-  box-shadow:
-    0 0 0 9px rgba(255, 255, 255, 0.85),
-    0 0 0 16px rgba(120, 75, 95, 0.26),
-    0 15px 30px rgba(120, 70, 95, 0.32);
-  transition: transform 0.09s ease, filter 0.09s ease;
-}
-.pad .glyph {
-  font-size: 52px;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(90, 40, 60, 0.45);
-  line-height: 1;
-}
-.pad.on,
-.pad:active {
-  transform: scale(0.94);
-  filter: brightness(1.18);
-}
-.pad:disabled {
-  filter: grayscale(0.55) opacity(0.5);
-  cursor: default;
-}
-
-.dropbtn {
-  position: relative;
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
-  border: 0;
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(circle at 36% 24%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0) 42%),
-    linear-gradient(180deg, #fdf3f6 0%, #eddae1 55%, #d8bcc6 100%);
-  box-shadow:
-    0 0 0 12px rgba(255, 255, 255, 0.9),
-    0 0 0 22px rgba(110, 70, 90, 0.28),
-    0 22px 44px rgba(110, 65, 90, 0.36);
-  transition: transform 0.09s ease, filter 0.09s ease;
-}
-.dropbtn .ring {
-  position: absolute;
-  inset: 24px;
-  border-radius: 50%;
-  border: 6px solid rgba(255, 255, 255, 0.75);
-  box-shadow: inset 0 7px 20px rgba(120, 75, 100, 0.22);
-}
-.dropbtn .glyph {
-  font-size: 74px;
-  color: var(--brand);
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
-  line-height: 1;
-}
-.dropbtn.pressed,
-.dropbtn:active {
-  transform: scale(0.95);
-  filter: brightness(1.1);
-}
-.dropbtn:disabled {
-  filter: grayscale(0.5) opacity(0.5);
-  cursor: default;
-}
+/* .ctl-row / .dpad / .pad / .dropbtn 구버전 규칙은 2D 스킨으로 바뀌며 제거했다.
+   버튼 자체는 .pad / .dropbtn 클래스 이름을 그대로 물려받는다 — kiosk-shot,
+   tools/diag/input.mjs 가 그 선택자로 화면을 조작하기 때문이다. */
 
 .ctl-hints {
-  width: 100%;
+  position: absolute;
+  left: 56px; /* 벤치와 같은 좌우 여백 */
+  right: 56px;
+  top: 568px; /* 벤치 hintsY 1869 */
   display: flex;
-  justify-content: space-around;
-  font-size: 29px;
+  justify-content: space-between;
+  font-size: 30px;
   color: var(--ink-soft);
+}
+
+/* ================================================================
+   2D 스킨 — 스프라이트 캐비닛 (Cabinet2D.tsx)
+
+   겹침은 전부 DOM 순서로 결정한다. 다만 하트에는 층 구분용 z-index가
+   붙어 있어서, 컨테이너가 자기 쌓임 맥락을 만들지 않으면 그 z-index가
+   밖으로 새어 나와 앞턱·패널 위로 하트가 그려진다 — isolation:isolate가
+   그걸 막는다.
+   ================================================================ */
+
+.cab2d {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.cab2d img {
+  position: absolute;
+  display: block;
+}
+.cab-bg-cloud {
+  left: 0;
+  top: 100px;
+  width: 1080px;
+  height: 1412px;
+  object-fit: cover;
+}
+.cab-bg    { left: 0;    top: 0;     width: 1080px; height: 1412px; }
+.cab-rail  { left: 22px; top: 78px;  width: 1036px; height: 103px; }
+.cab-floor { left: 26px; top: 1223px; width: 1028px; height: 101px; }
+.cab-ledge { left: 0;    top: 1256px; width: 1080px; height: 47px; }
+
+/* 집게 뭉치 — X 이동과 케이블 흔들림을 그룹 통째로 받는다 */
+.cab-claw {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 1080px;
+  height: 1412px;
+  transform: translateX(var(--claw-x, 0px)) rotate(var(--claw-sway, 0deg));
+  transform-origin: 540px 100px;
+  will-change: transform;
+}
+.cab-carriage { left: 418px; top: 96px; width: 244px; height: 191px; }
+.cab-tube     { left: 525px; top: 268px; width: 41px; height: var(--tube-h, 120px); }
+/* 두 팔은 축(hub) 아래에 깔린다 — 축이 팔뿌리를 덮어 회전축 오차를 가려준다 */
+.cab-prongL {
+  left: 395.5px; top: var(--prong-y, 400px); width: 105px; height: 216px;
+  transform-origin: 88% 12%;
+  transform: rotate(var(--prong-a, 22deg));
+}
+.cab-prongR {
+  left: 580px; top: var(--prong-y, 400px); width: 104px; height: 216px;
+  transform-origin: 12% 12%;
+  transform: rotate(calc(-1 * var(--prong-a, 22deg)));
+}
+.cab-hub { left: 468px; top: var(--hub-y, 380px); width: 155px; height: 163px; }
+
+.cab-hearts {
+  position: absolute;
+  left: -80px;
+  top: 60px;
+  width: 1080px;
+  height: 1412px;
+  z-index: 0;
+  isolation: isolate;
+}
+.cab-grab {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  isolation: isolate;
+}
+.cab-grab img { position: absolute; }
+
+/* ---------- 2D 스킨 조작부 버튼 ----------
+   좌표는 1080×1920 설계 박스 기준값에서 조작부 상단(1301)을 뺀 값. */
+.ctl-timer,
+.ctl-timerbar {
+  z-index: 2;
+}
+.padimg {
+  position: absolute;
+  z-index: 2;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 90ms ease, filter 90ms ease;
+}
+.padimg img {
+  display: block;
+  width: auto;
+  height: auto;
+  pointer-events: none;
+}
+.padimg.on {
+  transform: translateY(5px) scale(0.98);
+  filter: brightness(0.95);
+}
+.padimg:disabled {
+  cursor: default;
+}
+/* 상자 폭 195 = 오른쪽 버튼 시작점(305)까지. 이미지는 235로 넘쳐 나가지만
+   pointer-events:none 이라 판정에 끼어들지 않는다. */
+.pad-left  { left: 110px; top: 227px; width: 195px; height: 182px; overflow: visible; }
+.pad-left img  { width: 235px; }
+.pad-right { left: 305px; top: 227px; width: 277px; height: 181px; }
+.pad-right img { width: 277px; }
+.pad-catch { left: 678px; top: 185px; width: 390px; height: 271px; }
+.pad-catch img { width: 390px; }
+
+.ctl-hints {
+  z-index: 2;
 }

@@ -5,10 +5,10 @@
   "attract.blocked": "Vui lòng chờ một chút. Nhân viên đang kiểm tra.",
   "attract.eventClosed": "Sự kiện đã kết thúc hôm nay. Cảm ơn bạn!",
 
-  "tutorial.line1": "Di chuyển sang trái · phải để chọn vị trí",
-  "tutorial.line2": "Rồi nhấn CATCH",
+  "tutorial.line1": "Di chuyển sang trái · phải\nđể chọn vị trí",
+  "tutorial.line2": "Nhấn CATCH để gắp",
 
-  "aim.guide": "Di chuyển sang trái phải để chọn vị trí",
+  "aim.guide": "Di chuyển trái/phải để chọn vị trí",
   "aim.hurry": "Nhanh lên!",
   "aim.timeLeft": "Còn lại",
   "aim.oncePerPlay": "1 lượt duy nhất",
@@ -18,7 +18,7 @@
   "result.winTitle": "YOU GOT IT!",
   "result.winPrize": "Bạn đã trúng {prize}",
   "result.missTitle": "SO CLOSE!",
-  "result.missBody": "Cảm ơn bạn đã tham gia",
+  "result.missBody": "Chúc bạn\nmay mắn lần sau",
   "result.codeLabel": "Mã nhận quà",
   "result.showToStaff": "Hãy cho nhân viên xem mã này",
   "result.testWatermark": "TEST",
@@ -32,5 +32,15 @@
 
   "error.generic": "Vui lòng chờ một chút. Nhân viên đang kiểm tra.",
   "error.network": "Vui lòng chờ một chút. Nhân viên đang kiểm tra.",
-  "error.callStaff": "Vui lòng gọi nhân viên"
+  "error.callStaff": "Vui lòng gọi nhân viên",
+
+  "operator.confirmTitle": "Xác nhận quyền truy cập",
+  "operator.pinPrompt": "Nhập mã PIN gồm {len} chữ số",
+  "operator.close": "Đóng",
+  "operator.approveTitle": "Xác nhận lượt chơi",
+  "operator.approveSub": "Vui lòng kiểm tra điều kiện tham gia trước khi xác nhận.",
+  "operator.startPlay": "Bắt đầu lượt chơi",
+  "operator.approving": "Đang xác nhận…",
+  "operator.testSessionOpen": "Mở phiên test",
+  "operator.testSessionCollapse": "Thu gọn phiên test"
 }
