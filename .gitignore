@@ -7,3 +7,7 @@ server/data/reports/
 *.log
 .DS_Store
 reports/
+.env
+.env.*
+!.env.example
+.idea/

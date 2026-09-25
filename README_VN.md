@@ -221,3 +221,9 @@ Session được tạo với `isTest: true` sẽ:
 Sử dụng `node:sqlite` được tích hợp sẵn, không có dependency yêu cầu native build.
 
 Môi trường phát triển và kiểm chứng đã được thực hiện trên **Node 24.14**.
+
+---
+
+## Deploy bằng Docker trên EC2
+
+Xem [DEPLOY_EC2.md](DEPLOY_EC2.md). Cấu hình mặc định publish Lucky Draw ở cổng `8788` và lưu SQLite trong Docker volume riêng.

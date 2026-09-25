@@ -1,0 +1,41 @@
+name: aepick-luckydraw
+
+services:
+  app:
+    image: aepick-luckydraw:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${LUCKYDRAW_PORT:-8788}:8788"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8788
+      DB_PATH: /app/server/data/luckydraw.sqlite
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+      ADMIN_KEY: "${ADMIN_KEY:?Set ADMIN_KEY in .env}"
+      OPERATOR_PIN: "${OPERATOR_PIN:?Set OPERATOR_PIN in .env}"
+    volumes:
+      - luckydraw-data:/app/server/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8788/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  luckydraw-data:
+    name: aepick-luckydraw-data
