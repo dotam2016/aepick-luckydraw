@@ -2,12 +2,6 @@ name: Deploy EC2
 
 on:
   workflow_dispatch:
-    inputs:
-      branch:
-        description: Branch to deploy
-        required: true
-        default: main
-        type: string
 
 concurrency:
   group: aepick-luckydraw-production
@@ -21,7 +15,8 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 30
     env:
-      DEPLOY_BRANCH: ${{ inputs.branch }}
+      DEPLOY_REF: ${{ github.ref }}
+      DEPLOY_SHA: ${{ github.sha }}
 
     steps:
       - name: Deploy selected branch
@@ -30,11 +25,11 @@ jobs:
           set -euo pipefail
           cd "$HOME/aepick-luckydraw"
 
-          git check-ref-format --branch "$DEPLOY_BRANCH" >/dev/null
-          git fetch origin "refs/heads/$DEPLOY_BRANCH"
-          git switch --detach FETCH_HEAD
+          git fetch origin "$DEPLOY_REF"
+          git cat-file -e "$DEPLOY_SHA^{commit}"
+          git switch --detach "$DEPLOY_SHA"
 
-          echo "Deploying branch: $DEPLOY_BRANCH"
-          echo "Deploying commit: $(git rev-parse HEAD)"
+          echo "Deploying ref: $DEPLOY_REF"
+          echo "Deploying commit: $DEPLOY_SHA"
 
           bash ./deploy-ec2.sh
