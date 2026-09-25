@@ -13,9 +13,11 @@ import { join } from 'node:path';
  *
  * 개발 서버는 '/'로 둔다 — kiosk-shot·bench·wallsweep 등 검증 도구가 전부
  * http://localhost:5174/ 를 직접 연다.
+ *
+ * Cloudflare Pages처럼 도메인 루트에 서빙하는 배포는 VITE_BASE_PATH=/ 로 오버라이드한다.
  */
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/kiosk/' : '/',
+  base: command === 'build' ? (process.env.VITE_BASE_PATH ?? '/kiosk/') : '/',
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.1.0'),

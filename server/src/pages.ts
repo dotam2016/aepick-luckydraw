@@ -230,6 +230,9 @@ const PAGE = HTML`<!doctype html>
 const TIERS = ['t1','t2','t3','t4','t5','miss'];
 const TIER_KO = {t1:'1등',t2:'2등',t3:'3등',t4:'4등',t5:'5등',miss:'꽝'};
 const REASON_KO = {inactive:'비활성',noStock:'재고 없음',dailyCap:'일일 상한',eventCap:'행사 상한',pacingQuota:'시간대 쿼터'};
+/* API Gateway 등에서 이 페이지 자체가 /prod/luckydraw/admin 같은 경로 뒤에 있을 수 있다.
+   같은 배포의 API도 항상 같은 접두사 뒤에 있으므로 현재 경로에서 역산한다. */
+const API_BASE = location.pathname.replace(/\/admin\/?$/, '');
 let KEY = localStorage.getItem('ldKey') || '';
 let CURRENT = null;
 
@@ -241,7 +244,7 @@ function show(text, ok){ const m=document.getElementById('msg'); m.textContent=t
   clearTimeout(show._t); show._t=setTimeout(()=>{m.className='msg';},4500); }
 
 async function api(path, opts){
-  const r = await fetch(path, Object.assign({ headers: headers() }, opts||{}));
+  const r = await fetch(API_BASE + path, Object.assign({ headers: headers() }, opts||{}));
   const text = await r.text();
   let data; try{ data = text ? JSON.parse(text) : {}; }catch{ data = { message:text }; }
   if(!r.ok) throw new Error(data.message || data.error || ('HTTP '+r.status));
@@ -485,13 +488,13 @@ function todayStamp(){
   return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate());
 }
 function downloadCsv(){
-  fetch('/api/admin/report.csv',{headers:headers()}).then(r=>r.blob()).then(b=>{
+  fetch(API_BASE+'/api/admin/report.csv',{headers:headers()}).then(r=>r.blob()).then(b=>{
     const a=document.createElement('a'); a.href=URL.createObjectURL(b);
     a.download='luckydraw-sessions-'+todayStamp()+'.csv'; a.click();
   });
 }
 function downloadXlsx(){
-  fetch('/api/admin/report.xlsx',{headers:headers()}).then(r=>r.blob()).then(b=>{
+  fetch(API_BASE+'/api/admin/report.xlsx',{headers:headers()}).then(r=>r.blob()).then(b=>{
     const a=document.createElement('a'); a.href=URL.createObjectURL(b);
     a.download='luckydraw-sessions-'+todayStamp()+'.xlsx'; a.click();
   });
