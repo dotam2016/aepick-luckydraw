@@ -181,8 +181,8 @@ const PAGE = HTML`<!doctype html>
         </div>
         <div class="row">
           <div style="flex:1;min-width:260px"><label class="lbl">변경 사유 (필수)</label><input id="reason"></div>
-          <button class="act ghost" onclick="validateRules()">검증</button>
-          <button class="act" id="pubBtn" onclick="publishRules()">게시</button>
+          <button class="act ghost" style="align-self:end" onclick="validateRules()">검증</button>
+          <button class="act" id="pubBtn" style="align-self:end" onclick="publishRules()">게시</button>
         </div>
         <div id="preview" class="dev"></div>
       </div>
@@ -205,6 +205,7 @@ const PAGE = HTML`<!doctype html>
       <label class="dev"><input type="checkbox" id="incTest" style="width:auto"> 테스트 세션 포함</label>
       <button class="act ghost" onclick="loadSessions()">조회</button>
       <button class="act ghost" onclick="downloadCsv()">CSV 내보내기</button>
+      <button class="act ghost" onclick="downloadXlsx()">Excel 내보내기</button>
     </div>
     <div class="wrap">
       <h2>세션 로그</h2>
@@ -479,10 +480,20 @@ async function loadSessions(){
       +'</tr>';
   }).join('') || '<tr><td colspan=10 class="dev">없음</td></tr>';
 }
+function todayStamp(){
+  const d=new Date(); const p=n=>String(n).padStart(2,'0');
+  return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate());
+}
 function downloadCsv(){
   fetch('/api/admin/report.csv',{headers:headers()}).then(r=>r.blob()).then(b=>{
     const a=document.createElement('a'); a.href=URL.createObjectURL(b);
-    a.download='luckydraw-sessions.csv'; a.click();
+    a.download='luckydraw-sessions-'+todayStamp()+'.csv'; a.click();
+  });
+}
+function downloadXlsx(){
+  fetch('/api/admin/report.xlsx',{headers:headers()}).then(r=>r.blob()).then(b=>{
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='luckydraw-sessions-'+todayStamp()+'.xlsx'; a.click();
   });
 }
 async function loadAudit(){

@@ -3,6 +3,7 @@
  */
 
 import type { FastifyInstance } from 'fastify';
+import ExcelJS from 'exceljs';
 import {
   ALL_TIERS,
   WIN_TIERS,
@@ -384,9 +385,18 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   /* ---------- 리포트 ---------- */
 
-  app.get('/api/admin/report.csv', async (req, reply) => {
-    if (!requireOperator(req, reply)) return;
-    const rows = db
+  const REPORT_HEADERS = [
+    'session_id', 'created_at', 'played_at', 'device_id', 'operator_id', 'is_test',
+    'status', 'rule_version', 'result_tier', 'claim_code', 'claimed_at', 'claimed_by',
+    'void_reason', 'aim_duration_ms', 'auto_catch', 'min_fps',
+  ] as const;
+
+  function todayStamp(): string {
+    return new Date().toISOString().slice(0, 10).replaceAll('-', '');
+  }
+
+  function fetchReportRows(): Record<string, unknown>[] {
+    return db
       .prepare(
         `SELECT s.session_id, s.created_at, s.played_at, s.device_id, s.operator_id, s.is_test,
                 s.status, s.rule_version, d.result_tier, c.claim_code, c.claimed_at, c.claimed_by,
@@ -398,26 +408,42 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
          ORDER BY s.created_at DESC LIMIT 20000`,
       )
       .all() as Record<string, unknown>[];
+  }
 
-    const headers = [
-      'session_id', 'created_at', 'played_at', 'device_id', 'operator_id', 'is_test',
-      'status', 'rule_version', 'result_tier', 'claim_code', 'claimed_at', 'claimed_by',
-      'void_reason', 'aim_duration_ms', 'auto_catch', 'min_fps',
-    ];
+  app.get('/api/admin/report.csv', async (req, reply) => {
+    if (!requireOperator(req, reply)) return;
+    const rows = fetchReportRows();
+
     const escape = (v: unknown) => {
       if (v === null || v === undefined) return '';
       const s = String(v);
       return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
     };
     const csv = [
-      headers.join(','),
-      ...rows.map((r) => headers.map((h) => escape(r[h])).join(',')),
+      REPORT_HEADERS.join(','),
+      ...rows.map((r) => REPORT_HEADERS.map((h) => escape(r[h])).join(',')),
     ].join('\n');
 
     return reply
       .header('content-type', 'text/csv; charset=utf-8')
-      .header('content-disposition', 'attachment; filename="luckydraw-sessions.csv"')
+      .header('content-disposition', `attachment; filename="luckydraw-sessions-${todayStamp()}.csv"`)
       .send('﻿' + csv);
+  });
+
+  app.get('/api/admin/report.xlsx', async (req, reply) => {
+    if (!requireOperator(req, reply)) return;
+    const rows = fetchReportRows();
+
+    const wb = new ExcelJS.Workbook();
+    const sheet = wb.addWorksheet('sessions');
+    sheet.columns = REPORT_HEADERS.map((h) => ({ header: h, key: h, width: 18 }));
+    sheet.addRows(rows);
+
+    const buf = await wb.xlsx.writeBuffer();
+    return reply
+      .header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('content-disposition', `attachment; filename="luckydraw-sessions-${todayStamp()}.xlsx"`)
+      .send(Buffer.from(buf));
   });
 
   app.get('/api/admin/audit', async (req, reply) => {

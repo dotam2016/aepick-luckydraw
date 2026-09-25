@@ -40,6 +40,9 @@ export class ApiError extends Error {
   }
 }
 
+/** 미설정 시 빈 문자열 — 같은 origin의 로컬 서버(프록시/동일 배포)를 그대로 쓴다 */
+const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+
 const DEVICE_KEY = 'ld.deviceId';
 
 export function getDeviceId(): string {
@@ -55,7 +58,7 @@ async function request<T>(path: string, init: RequestInit = {}, timeoutMs = 8000
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(path, {
+    const res = await fetch(API_BASE + path, {
       ...init,
       signal: ctrl.signal,
       headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
@@ -171,7 +174,7 @@ export function reportError(payload: {
   appVersion?: string;
   recoveryAction?: string;
 }): void {
-  void fetch('/api/errors', {
+  void fetch(API_BASE + '/api/errors', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ appVersion: __APP_VERSION__, ...payload }),

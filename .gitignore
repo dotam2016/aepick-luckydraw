@@ -5,5 +5,7 @@ server/data/*.sqlite-shm
 server/data/*.sqlite-wal
 server/data/reports/
 *.log
+.env.local
+.env.*.local
 .DS_Store
 reports/
