@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "server/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "compose.yaml"
+      - "deploy-ec2.sh"
+      - ".github/workflows/ci.yml"
+
+  push:
+    branches: [main]
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "server/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.base.json"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "compose.yaml"
+      - "deploy-ec2.sh"
+      - ".github/workflows/ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build application
+        run: npm run build
