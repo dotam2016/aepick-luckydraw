@@ -1,0 +1,29 @@
+name: Deploy EC2
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: aepick-luckydraw-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    timeout-minutes: 30
+
+    steps:
+      - name: Deploy main
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$HOME/aepick-luckydraw"
+
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+
+          bash ./deploy-ec2.sh
