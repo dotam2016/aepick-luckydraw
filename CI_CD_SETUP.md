@@ -70,9 +70,16 @@ Sau khi workflow đã có trên nhánh `main`:
 1. Mở tab `Actions` của repository.
 2. Chọn workflow `Deploy EC2`.
 3. Chọn `Run workflow`.
-4. Chọn nhánh `main` và xác nhận chạy.
+4. Nhập branch cần deploy vào trường `Branch to deploy`, mặc định là `main`.
+5. Xác nhận chạy.
 
-Workflow sẽ cập nhật source từ `main`, build image trên EC2, khởi động container và chờ health check.
+Ví dụ để deploy nhánh thiết kế:
+
+```text
+origin-design-22092026
+```
+
+Workflow sẽ fetch đúng branch được chọn, checkout chính xác commit vừa fetch, build image trên EC2, khởi động container và chờ health check. Nếu branch không tồn tại hoặc tên branch không hợp lệ, job sẽ dừng trước khi build.
 
 Kiểm tra sau deployment:
 
