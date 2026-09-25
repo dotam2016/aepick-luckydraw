@@ -1,0 +1,35 @@
+name: Deploy EC2
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: aepick-luckydraw-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    env:
+      DEPLOY_REF: ${{ github.ref }}
+      DEPLOY_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Deploy selected branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$HOME/aepick-luckydraw"
+
+          git fetch origin "$DEPLOY_REF"
+          git cat-file -e "$DEPLOY_SHA^{commit}"
+          git switch --detach "$DEPLOY_SHA"
+
+          echo "Deploying ref: $DEPLOY_REF"
+          echo "Deploying commit: $DEPLOY_SHA"
+
+          bash ./deploy-ec2.sh
