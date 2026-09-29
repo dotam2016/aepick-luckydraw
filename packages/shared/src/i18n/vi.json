@@ -42,5 +42,24 @@
   "operator.startPlay": "Bắt đầu lượt chơi",
   "operator.approving": "Đang xác nhận…",
   "operator.testSessionOpen": "Mở phiên test",
-  "operator.testSessionCollapse": "Thu gọn phiên test"
+  "operator.testSessionCollapse": "Thu gọn phiên test",
+
+  "operator.recoverTitle": "Phiên chưa hoàn tất",
+  "operator.recoverSub": "Thiết bị này đang có một phiên chưa hoàn tất. Kết quả đã được chốt sẵn, vui lòng chọn Tiếp tục hoặc Vô hiệu hoá trước khi bắt đầu lượt chơi mới.",
+  "operator.sessionLabel": "Phiên",
+  "operator.statusLabel": "Trạng thái",
+  "operator.createdLabel": "Tạo lúc",
+  "operator.testSessionBadge": "Phiên test",
+  "operator.resumeBtn": "Tiếp tục — chơi lại đúng kết quả",
+  "operator.voidBtn": "Vô hiệu hoá",
+  "operator.testModeNotice": "Phiên test không trừ tồn kho và không tính vào thống kê. Có thể chỉ định hạng để kiểm tra hiệu ứng ngay.",
+  "operator.tierShortMiss": "Trượt",
+  "operator.forceTierStart": "Bắt đầu test",
+  "operator.forceTierAsIs": " (giữ nguyên xác suất)",
+  "operator.revealSectionTitle": "Hiệu ứng công bố kết quả (thử nghiệm A/B):",
+  "operator.revealOptionA": "Phương án A — Gắp được / Trượt",
+  "operator.revealOptionB": "Phương án B — Mở nắp Capsule",
+  "operator.noMotionError": "Phiên này chưa có kết quả rút thăm. Vui lòng vô hiệu hoá phiên.",
+  "operator.pinInvalid": "Mã PIN không đúng.",
+  "operator.sessionInProgressError": "Máy này đang có một lượt chơi chưa hoàn tất. Vui lòng chọn Tiếp tục hoặc Vô hiệu hoá trước khi bắt đầu lượt mới."
 }

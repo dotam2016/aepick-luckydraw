@@ -42,5 +42,24 @@
   "operator.startPlay": "Start play",
   "operator.approving": "Confirming…",
   "operator.testSessionOpen": "Open test session",
-  "operator.testSessionCollapse": "Collapse test session"
+  "operator.testSessionCollapse": "Collapse test session",
+
+  "operator.recoverTitle": "Unfinished session",
+  "operator.recoverSub": "This device has an unfinished session. The result has already been decided — choose Resume or Void before starting a new play.",
+  "operator.sessionLabel": "Session",
+  "operator.statusLabel": "Status",
+  "operator.createdLabel": "Created",
+  "operator.testSessionBadge": "Test session",
+  "operator.resumeBtn": "Resume — replay same result",
+  "operator.voidBtn": "Void",
+  "operator.testModeNotice": "Test sessions don't deduct stock and are excluded from statistics. Force a tier to check its effect right away.",
+  "operator.tierShortMiss": "Miss",
+  "operator.forceTierStart": "Start test",
+  "operator.forceTierAsIs": " (keep normal odds)",
+  "operator.revealSectionTitle": "Result reveal effect (A/B test):",
+  "operator.revealOptionA": "Option A — Grab / Miss",
+  "operator.revealOptionB": "Option B — Capsule open",
+  "operator.noMotionError": "This session has no draw result yet. Please void it.",
+  "operator.pinInvalid": "Incorrect PIN.",
+  "operator.sessionInProgressError": "This device already has an unfinished session. Please Resume or Void it before starting a new play."
 }

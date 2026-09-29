@@ -192,7 +192,6 @@ export default function App() {
     } catch (err) {
       setOpBusy(false);
       const code = err instanceof ApiError ? err.code : 'NETWORK';
-      const message = err instanceof Error ? err.message : String(err);
       reportError({ errorCode: code, networkState: online ? 'online' : 'offline' });
 
       if (code === 'SESSION_IN_PROGRESS') {
@@ -202,13 +201,13 @@ export default function App() {
         } catch {
           /* 무시 */
         }
-        setOpError(message);
+        setOpError(t('operator.sessionInProgressError'));
         setScreen('WAITING');
         return;
       }
       // 부록 A: draw_failed / network_timeout → OPERATOR_HOLD
-      setOpError(message);
-      setHold({ code, message });
+      setOpError(t('error.generic'));
+      setHold({ code, message: t('error.generic') });
       setScreen('OPERATOR_HOLD');
     }
   };
@@ -216,7 +215,7 @@ export default function App() {
   /* ---------- 이어하기 ---------- */
   const resumeSession = (r: RecoverableSession) => {
     if (!r.motion) {
-      setOpError('추첨 결과가 없는 세션입니다. 무효 처리해 주세요.');
+      setOpError(t('operator.noMotionError'));
       return;
     }
     setSession({
@@ -244,8 +243,8 @@ export default function App() {
       setHold(null);
       setOpError(null);
       setScreen('WAITING');
-    } catch (err) {
-      setOpError(err instanceof Error ? err.message : String(err));
+    } catch {
+      setOpError(t('error.generic'));
     } finally {
       setOpBusy(false);
     }
@@ -397,7 +396,7 @@ export default function App() {
                   if (err instanceof ApiError && err.status === 401) {
                     setAuthed(false);
                     setPin('');
-                    setOpError('PIN이 올바르지 않습니다.');
+                    setOpError(t('operator.pinInvalid'));
                   }
                 });
             }}

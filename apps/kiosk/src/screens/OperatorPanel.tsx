@@ -114,29 +114,28 @@ export function OperatorPanel(props: OperatorPanelProps) {
     return (
       <div className="op-overlay">
         <div className="op-card">
-          <h2>미완료 세션</h2>
-          <div className="sub">
-            이 기기에 완료되지 않은 세션이 있습니다. 결과는 이미 확정되어 있으므로 이어하거나
-            무효 처리해야 신규 플레이를 시작할 수 있습니다.
-          </div>
+          <h2>{t('operator.recoverTitle')}</h2>
+          <div className="sub">{t('operator.recoverSub')}</div>
           <div className="op-status">
-            세션 <b>{recoverable.sessionId.slice(0, 8)}</b> · 상태 <b>{recoverable.status}</b>
+            {t('operator.sessionLabel')} <b>{recoverable.sessionId.slice(0, 8)}</b> ·{' '}
+            {t('operator.statusLabel')} <b>{recoverable.status}</b>
             <br />
-            생성 <b>{new Date(recoverable.createdAt).toLocaleString('ko-KR', { hour12: false })}</b>
+            {t('operator.createdLabel')}{' '}
+            <b>{new Date(recoverable.createdAt).toLocaleString('ko-KR', { hour12: false })}</b>
             {recoverable.isTest && (
               <>
                 <br />
-                <b>테스트 세션</b>
+                <b>{t('operator.testSessionBadge')}</b>
               </>
             )}
           </div>
           {error && <div className="op-error">{error}</div>}
           <div className="op-actions">
             <button className="btn primary" disabled={busy} onPointerDown={() => onResume(recoverable)}>
-              이어하기 — 동일 결과로 재생
+              {t('operator.resumeBtn')}
             </button>
             <button className="btn warn" disabled={busy} onPointerDown={() => onVoid(recoverable.sessionId)}>
-              무효 처리
+              {t('operator.voidBtn')}
             </button>
             <button className="btn ghost" onPointerDown={onClose}>
               {t('operator.close')}
@@ -165,23 +164,24 @@ export function OperatorPanel(props: OperatorPanelProps) {
             {busy ? t('operator.approving') : t('operator.startPlay')}
           </button>
 
-          <button
-            className="btn ghost"
-            onPointerDown={() => {
-              setTestMode((v) => !v);
-              setForceTier(undefined);
-            }}
-          >
-            {testMode ? t('operator.testSessionCollapse') : t('operator.testSessionOpen')}
-          </button>
+          {/* "Mở phiên test" — ẩn khỏi UI theo yêu cầu vận hành. testMode vẫn giữ nguyên
+              logic bên dưới để bật lại nhanh bằng cách bỏ điều kiện `false &&` này. */}
+          {false && (
+            <button
+              className="btn ghost"
+              onPointerDown={() => {
+                setTestMode((v) => !v);
+                setForceTier(undefined);
+              }}
+            >
+              {testMode ? t('operator.testSessionCollapse') : t('operator.testSessionOpen')}
+            </button>
+          )}
         </div>
 
         {testMode && (
           <>
-            <div className="op-status">
-              테스트 세션은 <b>재고를 차감하지 않고</b> 통계에서 제외됩니다. 등급을 지정하면 해당
-              연출을 바로 점검할 수 있습니다.
-            </div>
+            <div className="op-status">{t('operator.testModeNotice')}</div>
             <div className="tier-grid">
               {[...WIN_TIERS, 'miss' as const].map((tier) => (
                 <button
@@ -189,7 +189,7 @@ export function OperatorPanel(props: OperatorPanelProps) {
                   className={forceTier === tier ? 'on' : ''}
                   onPointerDown={() => setForceTier(tier)}
                 >
-                  {tier === 'miss' ? '꽝' : tier.replace('t', '') + '등'}
+                  {tier === 'miss' ? t('operator.tierShortMiss') : t(`tier.${tier}`)}
                 </button>
               ))}
             </div>
@@ -199,26 +199,29 @@ export function OperatorPanel(props: OperatorPanelProps) {
                 disabled={busy || blocked}
                 onPointerDown={() => onStart({ isTest: true, forceTier })}
               >
-                테스트 시작{forceTier ? ` — ${forceTier === 'miss' ? '꽝' : forceTier}` : ' (확률 그대로)'}
+                {t('operator.forceTierStart')}
+                {forceTier
+                  ? ` — ${forceTier === 'miss' ? t('operator.tierShortMiss') : t(`tier.${forceTier}`)}`
+                  : t('operator.forceTierAsIs')}
               </button>
             </div>
 
             {/* §4.3 — A/B안을 현장에서 즉시 비교할 수 있게 런타임 토글로 둔다 */}
             <div className="op-status" style={{ marginTop: 22 }}>
-              결과 공개 연출 (§4.3 A/B 검증):
+              {t('operator.revealSectionTitle')}
             </div>
             <div className="tier-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
               <button
                 className={revealMode === 'grabMiss' ? 'on' : ''}
                 onPointerDown={() => onRevealModeChange('grabMiss')}
               >
-                A안 획득/미획득
+                {t('operator.revealOptionA')}
               </button>
               <button
                 className={revealMode === 'capsuleOpen' ? 'on' : ''}
                 onPointerDown={() => onRevealModeChange('capsuleOpen')}
               >
-                B안 캡슐 개봉
+                {t('operator.revealOptionB')}
               </button>
             </div>
           </>
