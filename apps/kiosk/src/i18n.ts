@@ -7,8 +7,11 @@ import { DICTS, DEFAULT_LOCALE, type Locale } from '@aepick/shared';
 let dicts: Record<Locale, Record<string, string>> = DICTS;
 let locale: Locale = DEFAULT_LOCALE;
 
+// 서버 문구가 키 단위로 우선하고, 서버 버전이 더 오래돼 빠진 키는 번들 문구로 채운다
 export function installDicts(next: Record<Locale, Record<string, string>>) {
-  dicts = next;
+  const merged = { ...DICTS } as Record<Locale, Record<string, string>>;
+  for (const l of Object.keys(next) as Locale[]) merged[l] = { ...DICTS[l], ...next[l] };
+  dicts = merged;
 }
 
 export function setLocale(next: Locale) {
