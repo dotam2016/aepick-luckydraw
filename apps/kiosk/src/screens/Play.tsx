@@ -181,7 +181,8 @@ export function Play({
   return (
     <div className="layer">
       <div className="field">
-        {game && <Cabinet2D game={game} />}
+        {/* 엔진 준비 전에도 정지 모드로 기계를 먼저 그려 둔다 — 대기화면에서 넘어올 때 필드가 비어 번쩍이지 않게 */}
+        <Cabinet2D game={game ?? undefined} />
 
         {/* 상단 HUD — 1회 플레이 배지 */}
         {!finished && (
