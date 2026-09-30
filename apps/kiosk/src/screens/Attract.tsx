@@ -76,7 +76,7 @@ export function Attract({ online, blockedReason, onOperatorEnter, onLocaleChange
             (Result.tsx의 Chucmung.png/Chucmung2.png와 같은 방식) */}
         <img
           className="attract-title"
-          src={assetUrl(`/assets/cabinet/${locale === 'vi' ? 'tittle.png' : 'tittle2.png'}`)}
+          src={assetUrl(`/assets/cabinet/webp/${locale === 'vi' ? 'tittle.webp' : 'tittle2.webp'}`)}
           alt={t('attract.title')}
         />
       </div>

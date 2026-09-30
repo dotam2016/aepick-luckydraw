@@ -1,5 +1,5 @@
 /**
- * 조작부 — 화면 하단 619px. 2D 스킨의 `panel.png`를 그대로 깔고 그 위에 버튼
+ * 조작부 — 화면 하단 619px. 2D 스킨의 `panel.webp`를 그대로 깔고 그 위에 버튼
  * 스프라이트를 얹는다. 스티커는 패널 이미지에 이미 구워져 있다.
  *
  * 축 처리: 집게 이동은 1축(X)이므로 좌·우 두 버튼만 둔다.
@@ -52,7 +52,7 @@ export function Controller({ remainingMs, totalMs, active, finished, onHold, onD
 
   return (
     <div className="controller">
-      <img className="ctl-panel" src={assetUrl('/assets/cabinet/panel.png')} alt="" />
+      <img className="ctl-panel" src={assetUrl('/assets/cabinet/webp/panel.webp')} alt="" />
 
       {/* 타이머·게이지는 대기·결과 화면에서도 그대로 남되 0:00으로 멈춘다 —
           입력 안내(ctl-hints)만 플레이 중이 아닐 때 걷는다 */}
@@ -78,7 +78,7 @@ export function Controller({ remainingMs, totalMs, active, finished, onHold, onD
         onPointerCancel={release}
         aria-label="left"
       >
-        <img src={assetUrl('/assets/cabinet/btn-left.png')} alt="" />
+        <img src={assetUrl('/assets/cabinet/webp/btn-left.webp')} alt="" />
       </button>
 
       <button
@@ -90,7 +90,7 @@ export function Controller({ remainingMs, totalMs, active, finished, onHold, onD
         onPointerCancel={release}
         aria-label="right"
       >
-        <img src={assetUrl('/assets/cabinet/btn-right.png')} alt="" />
+        <img src={assetUrl('/assets/cabinet/webp/btn-right.webp')} alt="" />
       </button>
 
       <button
@@ -104,7 +104,7 @@ export function Controller({ remainingMs, totalMs, active, finished, onHold, onD
         onPointerLeave={() => setPressed(false)}
         aria-label={t('action.catch')}
       >
-        <img src={assetUrl('/assets/cabinet/btn-catch.png')} alt="" />
+        <img src={assetUrl('/assets/cabinet/webp/btn-catch.webp')} alt="" />
       </button>
 
       {!finished && (

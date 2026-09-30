@@ -121,7 +121,7 @@ export function Cabinet2D({ game }: { game?: ClawGame }) {
       row.xs.forEach((x, ci) => {
         const size = SKIN.heartSize * row.scale;
         const im = document.createElement('img');
-        im.src = assetUrl(`/assets/cabinet/heart${((ri * 3 + ci) % 5) + 1}.png`);
+        im.src = assetUrl(`/assets/cabinet/webp/heart${((ri * 3 + ci) % 5) + 1}.webp`);
         im.alt = '';
         im.style.width = `${size}px`;
         im.style.height = 'auto';
@@ -220,7 +220,7 @@ export function Cabinet2D({ game }: { game?: ClawGame }) {
             grabEl.style.height = 'auto';
             grab.appendChild(grabEl);
           }
-          grabEl.src = assetUrl(`/assets/cabinet/heart${(grabbedIdx % 5) + 1}.png`);
+          grabEl.src = assetUrl(`/assets/cabinet/webp/heart${(grabbedIdx % 5) + 1}.webp`);
         } else if (rs.grabbedColorIndex === null && grabEl) {
           grabEl.remove();
           grabEl = null;
@@ -278,37 +278,37 @@ export function Cabinet2D({ game }: { game?: ClawGame }) {
     return () => cancelAnimationFrame(raf);
   }, [game]);
 
-  const src = (p: string) => assetUrl(`/assets/cabinet/${p}`);
+  const src = (p: string) => assetUrl(`/assets/cabinet/webp/${p}`);
 
   return (
     <div className="cab2d" ref={fieldRef}>
-      <img className="cab-bg-cloud" src={src('cloud.png')} alt="" />
-      <img className="cab-bg" src={src('background.png')} alt="" />
-      <img className="cab-rail" src={src('rail.png')} alt="" />
-      <img className="cab-floor" src={src('floor.png')} alt="" />
+      <img className="cab-bg-cloud" src={src('cloud.webp')} alt="" />
+      <img className="cab-bg" src={src('background.webp')} alt="" />
+      <img className="cab-rail" src={src('rail.webp')} alt="" />
+      <img className="cab-floor" src={src('floor.webp')} alt="" />
 
       {/* 안쪽층 + 중간층 — 집게가 이 위를 지나간다 */}
       <div className="cab-hearts" ref={backRef} />
 
       {/* 오른팔 — 잡힌 하트 뒤 */}
       <div className="cab-claw" ref={clawBackRef}>
-        <img className="cab-prongR" ref={prongRRef} src={src('claw-prong-right.png')} alt="" />
+        <img className="cab-prongR" ref={prongRRef} src={src('claw-prong-right.webp')} alt="" />
       </div>
 
       <div className="cab-grab" ref={grabRef} />
 
       {/* 몸통·관·왼팔 — 잡힌 하트 앞 */}
       <div className="cab-claw" ref={clawFrontRef}>
-        <img className="cab-carriage" src={src('claw-carriage.png')} alt="" />
-        <img className="cab-tube" ref={tubeRef} src={src('claw-tube.png')} alt="" />
-        <img className="cab-prongL" ref={prongLRef} src={src('claw-prong-left.png')} alt="" />
-        <img className="cab-hub" ref={hubRef} src={src('claw-hub.png')} alt="" />
+        <img className="cab-carriage" src={src('claw-carriage.webp')} alt="" />
+        <img className="cab-tube" ref={tubeRef} src={src('claw-tube.webp')} alt="" />
+        <img className="cab-prongL" ref={prongLRef} src={src('claw-prong-left.webp')} alt="" />
+        <img className="cab-hub" ref={hubRef} src={src('claw-hub.webp')} alt="" />
       </div>
 
       {/* 바깥층 — 집게를 가린다 */}
       <div className="cab-hearts" ref={frontRef} />
 
-      <img className="cab-ledge" src={src('front-ledge.png')} alt="" />
+      <img className="cab-ledge" src={src('front-ledge.webp')} alt="" />
     </div>
   );
 }

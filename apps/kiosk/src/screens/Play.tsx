@@ -194,7 +194,7 @@ export function Play({
         {phase === 'READY' && (
           <div className="tutorial">
             <div className="tutorial-card">
-              <img src={assetUrl('/assets/cabinet/Guide.png')} alt="" />
+              <img src={assetUrl('/assets/cabinet/webp/Guide.webp')} alt="" />
               <div className="tut-step tut-step1">
                 <span className="tut-num">1</span>
                 {t('tutorial.line1')}

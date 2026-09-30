@@ -79,7 +79,7 @@ export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
         <div className="result-field">
           <div
             className="result-miss-box"
-            style={{ backgroundImage: `url(${assetUrl('/assets/cabinet/Vien2.png')})` }}
+            style={{ backgroundImage: `url(${assetUrl('/assets/cabinet/webp/Vien2.webp')})` }}
           >
             <p className="result-miss-body">{t('result.missBody')}</p>
           </div>
@@ -91,7 +91,7 @@ export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
   const prizeName = localized(reveal.prize?.name);
   /* 당첨 타이틀 이미지는 글자가 그림에 박혀 있어 언어별로 파일을 바꿔야 한다.
      Chucmung.png = 베트남어, Chucmung2.png = 영문(Congratulations). */
-  const titleImg = getLocale() === 'vi' ? 'Chucmung.png' : 'Chucmung2.png';
+  const titleImg = getLocale() === 'vi' ? 'Chucmung.webp' : 'Chucmung2.webp';
 
   return (
     <div className="result win">
@@ -101,16 +101,16 @@ export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
       <div className="result-field">
         <img
           className="result-title-img"
-          src={assetUrl(`/assets/cabinet/${titleImg}`)}
+          src={assetUrl(`/assets/cabinet/webp/${titleImg}`)}
           alt={t('result.winTitle')}
         />
 
         {/* §6.3 — 등급보다 실제 지급 경품명·이미지를 크게 표시한다 */}
         <div
           className="prize-box"
-          style={{ backgroundImage: `url(${assetUrl('/assets/cabinet/Vien.png')})` }}
+          style={{ backgroundImage: `url(${assetUrl('/assets/cabinet/webp/Vien.webp')})` }}
         >
-          <img className="prize-visual" src={assetUrl('/assets/cabinet/gift.png')} alt="" />
+          <img className="prize-visual" src={assetUrl('/assets/cabinet/webp/gift.webp')} alt="" />
           <div className="prize-name">{prizeName}</div>
         </div>
       </div>
