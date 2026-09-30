@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { WIN_TIERS, type ResultTier, type RevealMode } from '@aepick/shared';
 import type { RecoverableSession } from '../api';
-import { t } from '../i18n';
+import { getLocale, t } from '../i18n';
 
 export interface OperatorPanelProps {
   busy: boolean;
@@ -121,7 +121,7 @@ export function OperatorPanel(props: OperatorPanelProps) {
             {t('operator.statusLabel')} <b>{recoverable.status}</b>
             <br />
             {t('operator.createdLabel')}{' '}
-            <b>{new Date(recoverable.createdAt).toLocaleString('ko-KR', { hour12: false })}</b>
+            <b>{new Date(recoverable.createdAt).toLocaleString(getLocale(), { hour12: false })}</b>
             {recoverable.isTest && (
               <>
                 <br />
