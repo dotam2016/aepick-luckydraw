@@ -10,6 +10,7 @@
 const BASE = process.env.BASE ?? 'http://localhost:8788';
 const PIN = process.env.OPERATOR_PIN ?? '1234';
 const ADMIN = process.env.ADMIN_KEY ?? 'aepick-admin';
+const DASHBOARD = process.env.DASHBOARD_KEY ?? 'aepick-dashboard';
 
 let pass = 0;
 let fail = 0;
@@ -33,6 +34,7 @@ async function api(path, opts = {}) {
       'content-type': 'application/json',
       'x-operator-pin': PIN,
       'x-admin-key': ADMIN,
+      'x-dashboard-key': DASHBOARD,
       ...(opts.headers ?? {}),
     },
   });

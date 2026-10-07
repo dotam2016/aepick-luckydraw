@@ -26,6 +26,8 @@ import {
 
 export const OPERATOR_PIN = process.env.OPERATOR_PIN ?? '1234';
 export const ADMIN_KEY = process.env.ADMIN_KEY ?? 'aepick-admin';
+// 경품 · 재고 / 확률 설정 페이지(/admin/dashboard) 전용 — ADMIN_KEY와 별개의 비밀번호.
+export const DASHBOARD_KEY = process.env.DASHBOARD_KEY ?? 'aepick-dashboard';
 
 export function requireOperator(req: FastifyRequest, reply: FastifyReply): boolean {
   const pin = req.headers['x-operator-pin'];
@@ -38,6 +40,12 @@ export function requireOperator(req: FastifyRequest, reply: FastifyReply): boole
 export function requireAdmin(req: FastifyRequest, reply: FastifyReply): boolean {
   if (req.headers['x-admin-key'] === ADMIN_KEY) return true;
   reply.code(401).send({ error: 'UNAUTHORIZED', message: '관리자 인증이 필요합니다.' });
+  return false;
+}
+
+export function requireDashboard(req: FastifyRequest, reply: FastifyReply): boolean {
+  if (req.headers['x-dashboard-key'] === DASHBOARD_KEY) return true;
+  reply.code(401).send({ error: 'UNAUTHORIZED', message: '경품 · 확률 설정 인증이 필요합니다.' });
   return false;
 }
 

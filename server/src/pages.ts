@@ -89,10 +89,9 @@ const PAGE = HTML`<!doctype html>
 <nav>
   <button class="active" data-tab="queue">지급 큐</button>
   <button data-tab="dash">운영 대시보드</button>
-  <button data-tab="prizes">경품 · 재고</button>
-  <button data-tab="rules">확률 설정</button>
   <button data-tab="sessions">세션 로그</button>
   <button data-tab="audit">감사 로그</button>
+  <button id="toDash" style="margin-left:auto">경품 · 재고 / 확률 설정 →</button>
 </nav>
 
 <main>
@@ -127,70 +126,6 @@ const PAGE = HTML`<!doctype html>
     <div class="wrap">
       <h2>세션 상태</h2>
       <table><thead><tr><th>상태</th><th>건수</th></tr></thead><tbody id="statusBody"></tbody></table>
-    </div>
-  </section>
-
-  <!-- 경품 -->
-  <section id="prizes">
-    <div class="row">
-      <button class="act ghost" onclick="dayStart()">일일 오픈 — 기준 재고 리셋</button>
-      <span class="dev">고정 쿼터 페이싱의 기준값(day_start_qty)을 현재 잔여로 맞춥니다.</span>
-    </div>
-    <div class="wrap">
-      <h2>경품 · 재고</h2>
-      <table><thead><tr>
-        <th>등급</th><th>경품명(ko)</th><th>총</th><th>available</th><th>reserved</th><th>claimed</th>
-        <th>일일상한</th><th>행사상한</th><th>활성</th><th style="width:230px">재고 조정</th>
-      </tr></thead><tbody id="prizeBody"></tbody></table>
-    </div>
-  </section>
-
-  <!-- 확률 -->
-  <section id="rules">
-    <div class="wrap">
-      <h2>확률 설정 — 합계 100.000%가 아니면 게시할 수 없습니다</h2>
-      <div class="fields" id="probFields"></div>
-      <div style="padding:0 14px 14px">
-        <div class="row">
-          <div style="width:180px"><label class="lbl">합계</label><div id="sum" class="code">—</div></div>
-          <div style="width:200px"><label class="lbl">소진 정책</label>
-            <select id="policy">
-              <option value="toMiss">꽝 귀속 (권고)</option>
-              <option value="renormalize">비례 재정규화</option>
-            </select></div>
-        </div>
-        <div class="row">
-          <div style="width:130px"><label class="lbl">페이싱</label>
-            <select id="pacingOn"><option value="1">사용</option><option value="0">미사용</option></select></div>
-          <div style="width:130px"><label class="lbl">버킷(분)</label><input id="bucket" type="number"></div>
-          <div style="width:150px"><label class="lbl">쿼터 해제(분 전)</label><input id="release" type="number"></div>
-          <div style="width:130px"><label class="lbl">이월</label>
-            <select id="carry"><option value="1">이월</option><option value="0">고정</option></select></div>
-          <div style="width:210px"><label class="lbl">페이싱 대상 등급</label><input id="ptiers" placeholder="t1,t2,t3"></div>
-        </div>
-        <div class="row">
-          <div style="width:130px"><label class="lbl">조준(초)</label><input id="aim" type="number"></div>
-          <div style="width:150px"><label class="lbl">당첨 노출(초)</label><input id="rw" type="number"></div>
-          <div style="width:150px"><label class="lbl">꽝 노출(초)</label><input id="rm" type="number"></div>
-          <div style="width:150px"><label class="lbl">구슬 수</label><input id="balls" type="number"></div>
-          <div style="width:190px"><label class="lbl">결과 공개 연출 (§4.3)</label>
-            <select id="reveal">
-              <option value="capsuleOpen">B안 — 캡슐 개봉</option>
-              <option value="grabMiss">A안 — 획득/미획득</option>
-            </select></div>
-        </div>
-        <div class="row">
-          <div style="flex:1;min-width:260px"><label class="lbl">변경 사유 (필수)</label><input id="reason"></div>
-          <button class="act ghost" style="align-self:end" onclick="validateRules()">검증</button>
-          <button class="act" id="pubBtn" style="align-self:end" onclick="publishRules()">게시</button>
-        </div>
-        <div id="preview" class="dev"></div>
-      </div>
-    </div>
-    <div class="wrap">
-      <h2>설정 버전 이력</h2>
-      <table><thead><tr><th>버전</th><th>게시 시각</th><th>게시자</th><th>사유</th><th>확률</th><th></th></tr></thead>
-      <tbody id="ruleBody"></tbody></table>
     </div>
   </section>
 
@@ -258,8 +193,9 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   document.getElementById(b.dataset.tab).classList.add('active');
   if(b.dataset.tab==='sessions') loadSessions();
   if(b.dataset.tab==='audit') loadAudit();
-  if(b.dataset.tab==='rules') loadRules();
 });
+document.getElementById('toDash').onclick = () =>
+  location.href = location.pathname.replace(/\/admin\/?$/, '/admin/dashboard');
 
 function tierSpan(t){ return '<span class="tier '+t+'">'+(TIER_KO[t]||t)+'</span>'; }
 function ageCls(m){ return m>=30?'age-bad':(m>=10?'age-warn':''); }
@@ -339,6 +275,247 @@ async function loadDash(){
 
   document.getElementById('statusBody').innerHTML = Object.entries(d.sessions.byStatus)
     .map(([s,c])=>'<tr><td>'+s+'</td><td>'+c+'</td></tr>').join('') || '<tr><td colspan=2 class="dev">없음</td></tr>';
+}
+function card(k,v,s){ return '<div class="card"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>'; }
+
+/* ---------- 세션 로그 ---------- */
+async function loadSessions(){
+  const st = document.getElementById('stFilter').value;
+  const inc = document.getElementById('incTest').checked ? '1':'0';
+  const d = await api('/api/admin/sessions?limit=200&includeTest='+inc+(st?'&status='+st:''));
+  document.getElementById('sessBody').innerHTML = d.items.map(function(r){
+    const blocked = r.blocked_tiers && r.blocked_tiers !== '{}' ? '<div class="blocked">차단 '+r.blocked_tiers+'</div>' : '';
+    return '<tr>'
+      +'<td class="dev">'+fmt(r.created_at)+'</td>'
+      +'<td>'+r.status+blocked+'</td>'
+      +'<td>'+(r.result_tier?tierSpan(r.result_tier):'-')+'</td>'
+      +'<td class="dev">'+(r.claim_code||'-')+'</td>'
+      +'<td class="dev">'+(r.aim_duration_ms!=null?(r.aim_duration_ms/1000).toFixed(1)+'s':'-')+'</td>'
+      +'<td class="dev">'+(r.auto_catch?'Y':'')+'</td>'
+      +'<td class="dev">'+(r.min_fps??'-')+'</td>'
+      +'<td class="dev">v'+r.rule_version+'</td>'
+      +'<td class="dev">'+(r.is_test?'TEST':'')+'</td>'
+      +'<td class="dev">'+(r.claimed_at?fmt(r.claimed_at)+' / '+r.claimed_by : (r.void_reason||'-'))+'</td>'
+      +'</tr>';
+  }).join('') || '<tr><td colspan=10 class="dev">없음</td></tr>';
+}
+function todayStamp(){
+  const d=new Date(); const p=n=>String(n).padStart(2,'0');
+  return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate());
+}
+function downloadCsv(){
+  fetch(API_BASE+'/api/admin/report.csv',{headers:headers()}).then(r=>r.blob()).then(b=>{
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='luckydraw-sessions-'+todayStamp()+'.csv'; a.click();
+  });
+}
+function downloadXlsx(){
+  fetch(API_BASE+'/api/admin/report.xlsx',{headers:headers()}).then(r=>r.blob()).then(b=>{
+    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+    a.download='luckydraw-sessions-'+todayStamp()+'.xlsx'; a.click();
+  });
+}
+async function loadAudit(){
+  const d = await api('/api/admin/audit');
+  document.getElementById('auditBody').innerHTML = d.items.map(r=>
+    '<tr><td class="dev">'+fmt(r.at)+'</td><td>'+r.actor+'</td><td>'+r.action+'</td>'
+    +'<td class="dev">'+(r.target||'-')+'</td><td class="dev">'+(r.reason||'-')+'</td></tr>').join('')
+    || '<tr><td colspan=5 class="dev">없음</td></tr>';
+}
+
+async function load(){
+  if(!KEY){ show('관리자 키 또는 운영자 PIN을 입력하세요.', false); return; }
+  try{ await loadQueue(); await loadDash(); }
+  catch(e){ show(e.message, false); }
+}
+load();
+setInterval(()=>{ if(document.getElementById('queue').classList.contains('active')) loadQueue().catch(()=>{}); }, 15000);
+</script>
+</body></html>`;
+
+const PAGE_DASHBOARD = HTML`<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AEPICK Lucky Draw · 경품 · 확률</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#171e2d; --panel2:#1e2739;
+    --line:#2b3549; --text:#e8edf6; --dim:#8fa0bd; --accent:#5b8cff;
+    --ok:#3fbf7f; --warn:#e8a53d; --bad:#e8564f; --gold:#e9c46a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","맑은 고딕",sans-serif}
+  header{display:flex;align-items:center;gap:16px;padding:14px 20px;
+         background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  h1{font-size:16px;margin:0;letter-spacing:.5px}
+  .badge{font-size:11px;padding:3px 8px;border-radius:99px;background:var(--panel2);color:var(--dim)}
+  .badge.on{background:rgba(63,191,127,.15);color:var(--ok)}
+  .badge.off{background:rgba(232,86,79,.15);color:var(--bad)}
+  nav{display:flex;gap:4px;padding:0 20px;background:var(--panel);border-bottom:1px solid var(--line);
+      overflow-x:auto;position:sticky;top:53px;z-index:9}
+  nav button{background:none;border:0;color:var(--dim);padding:11px 14px;cursor:pointer;
+             font-size:13px;border-bottom:2px solid transparent;white-space:nowrap}
+  nav button.active{color:var(--text);border-bottom-color:var(--accent)}
+  main{padding:20px;max-width:1280px}
+  section{display:none} section.active{display:block}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+  tbody tr:hover{background:var(--panel2)}
+  .wrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;overflow-x:auto;margin-bottom:20px}
+  .wrap h2{font-size:13px;margin:0;padding:12px 14px;border-bottom:1px solid var(--line);color:var(--dim)}
+  button.act{background:var(--accent);color:#fff;border:0;border-radius:7px;padding:7px 13px;cursor:pointer;font-size:13px}
+  button.act:hover{filter:brightness(1.12)}
+  button.act.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+  button.act:disabled{opacity:.45;cursor:default}
+  input,select{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+               border-radius:7px;padding:7px 9px;font:inherit;width:100%}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .row>*{flex:0 0 auto}
+  .code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:17px;letter-spacing:2px;font-weight:600}
+  .tier{font-weight:600}
+  .t1{color:var(--gold)} .t2{color:#f2a6c0} .t3{color:#8fd3f4} .t4{color:#a9e5c0} .t5{color:#c9d5e8}
+  .miss{color:var(--dim)}
+  .msg{padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:13px;display:none}
+  .msg.ok{display:block;background:rgba(63,191,127,.13);color:var(--ok)}
+  .msg.err{display:block;background:rgba(232,86,79,.13);color:var(--bad)}
+  .pin{display:flex;gap:8px;align-items:center}
+  .pin input{width:160px}
+  .bar{height:6px;border-radius:99px;background:var(--panel2);overflow:hidden;margin-top:6px}
+  .bar i{display:block;height:100%;background:var(--accent)}
+  .dev{font-size:11px;color:var(--dim)}
+  label.lbl{font-size:11px;color:var(--dim);display:block;margin-bottom:3px}
+  .fields{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));padding:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>AEPICK LUCKY DRAW</h1>
+  <span id="evBadge" class="badge">…</span>
+  <span id="ruleBadge" class="badge">…</span>
+  <div style="flex:1"></div>
+  <div class="pin">
+    <input id="key" type="password" placeholder="경품 · 확률 설정 비밀번호">
+    <button class="act ghost" onclick="saveKey()">저장</button>
+  </div>
+</header>
+
+<nav>
+  <button id="toAdmin">← 지급 큐 / 대시보드</button>
+  <button class="active" data-tab="prizes">경품 · 재고</button>
+  <button data-tab="rules">확률 설정</button>
+</nav>
+
+<main>
+  <div id="msg" class="msg"></div>
+
+  <!-- 경품 -->
+  <section id="prizes" class="active">
+    <div class="row">
+      <button class="act ghost" onclick="dayStart()">일일 오픈 — 기준 재고 리셋</button>
+      <span class="dev">고정 쿼터 페이싱의 기준값(day_start_qty)을 현재 잔여로 맞춥니다.</span>
+    </div>
+    <div class="wrap">
+      <h2>경품 · 재고</h2>
+      <table><thead><tr>
+        <th>등급</th><th>경품명(ko)</th><th>총</th><th>available</th><th>reserved</th><th>claimed</th>
+        <th>일일상한</th><th>행사상한</th><th>활성</th><th style="width:230px">재고 조정</th>
+      </tr></thead><tbody id="prizeBody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- 확률 -->
+  <section id="rules">
+    <div class="wrap">
+      <h2>확률 설정 — 합계 100.000%가 아니면 게시할 수 없습니다</h2>
+      <div class="fields" id="probFields"></div>
+      <div style="padding:0 14px 14px">
+        <div class="row">
+          <div style="width:180px"><label class="lbl">합계</label><div id="sum" class="code">—</div></div>
+          <div style="width:200px"><label class="lbl">소진 정책</label>
+            <select id="policy">
+              <option value="toMiss">꽝 귀속 (권고)</option>
+              <option value="renormalize">비례 재정규화</option>
+            </select></div>
+        </div>
+        <div class="row">
+          <div style="width:130px"><label class="lbl">페이싱</label>
+            <select id="pacingOn"><option value="1">사용</option><option value="0">미사용</option></select></div>
+          <div style="width:130px"><label class="lbl">버킷(분)</label><input id="bucket" type="number"></div>
+          <div style="width:150px"><label class="lbl">쿼터 해제(분 전)</label><input id="release" type="number"></div>
+          <div style="width:130px"><label class="lbl">이월</label>
+            <select id="carry"><option value="1">이월</option><option value="0">고정</option></select></div>
+          <div style="width:210px"><label class="lbl">페이싱 대상 등급</label><input id="ptiers" placeholder="t1,t2,t3"></div>
+        </div>
+        <div class="row">
+          <div style="width:130px"><label class="lbl">조준(초)</label><input id="aim" type="number"></div>
+          <div style="width:150px"><label class="lbl">당첨 노출(초)</label><input id="rw" type="number"></div>
+          <div style="width:150px"><label class="lbl">꽝 노출(초)</label><input id="rm" type="number"></div>
+          <div style="display:none"><label class="lbl">구슬 수</label><input id="balls" type="number"></div>
+          <div style="width:190px"><label class="lbl">결과 공개 연출 (§4.3)</label>
+            <select id="reveal">
+              <option value="capsuleOpen">B안 — 캡슐 개봉</option>
+              <option value="grabMiss">A안 — 획득/미획득</option>
+            </select></div>
+        </div>
+        <div class="row">
+          <div style="flex:1;min-width:260px"><label class="lbl">변경 사유 (필수)</label><input id="reason"></div>
+          <button class="act ghost" style="align-self:end" onclick="validateRules()">검증</button>
+          <button class="act" id="pubBtn" style="align-self:end" onclick="publishRules()">게시</button>
+        </div>
+        <div id="preview" class="dev"></div>
+      </div>
+    </div>
+    <div class="wrap">
+      <h2>설정 버전 이력</h2>
+      <table><thead><tr><th>버전</th><th>게시 시각</th><th>게시자</th><th>사유</th><th>확률</th><th></th></tr></thead>
+      <tbody id="ruleBody"></tbody></table>
+    </div>
+  </section>
+</main>
+
+<script>
+const TIERS = ['t1','t2','t3','t4','t5','miss'];
+const TIER_KO = {t1:'1등',t2:'2등',t3:'3등',t4:'4등',t5:'5등',miss:'꽝'};
+const API_BASE = location.pathname.replace(/\/admin\/dashboard\/?$/, '');
+let KEY = localStorage.getItem('ldDashKey') || '';
+document.getElementById('key').value = KEY;
+function saveKey(){ KEY = document.getElementById('key').value.trim(); localStorage.setItem('ldDashKey', KEY); load(); }
+
+function headers(){ return { 'content-type':'application/json', 'x-dashboard-key': KEY }; }
+function show(text, ok){ const m=document.getElementById('msg'); m.textContent=text; m.className='msg '+(ok?'ok':'err');
+  clearTimeout(show._t); show._t=setTimeout(()=>{m.className='msg';},4500); }
+
+async function api(path, opts){
+  const r = await fetch(API_BASE + path, Object.assign({ headers: headers() }, opts||{}));
+  const text = await r.text();
+  let data; try{ data = text ? JSON.parse(text) : {}; }catch{ data = { message:text }; }
+  if(!r.ok) throw new Error(data.message || data.error || ('HTTP '+r.status));
+  return data;
+}
+
+document.querySelectorAll('nav button[data-tab]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button[data-tab]').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('section').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById(b.dataset.tab).classList.add('active');
+});
+document.getElementById('toAdmin').onclick = () =>
+  location.href = location.pathname.replace(/\/admin\/dashboard\/?$/, '/admin');
+
+function tierSpan(t){ return '<span class="tier '+t+'">'+(TIER_KO[t]||t)+'</span>'; }
+function fmt(iso){ return iso ? new Date(iso).toLocaleString('ko-KR',{hour12:false}) : '-'; }
+
+/* ---------- 경품 ---------- */
+async function loadPrizes(){
+  const d = await api('/api/admin/dashboard-summary');
+  document.getElementById('evBadge').textContent = d.event.emergencyStop ? '긴급 중지'
+    : (d.event.eventOn ? '운영 중' : '행사 OFF');
+  document.getElementById('evBadge').className = 'badge ' + (d.event.eventOn && !d.event.emergencyStop ? 'on':'off');
+  document.getElementById('ruleBadge').textContent = '규칙 v'+d.ruleVersion;
 
   document.getElementById('prizeBody').innerHTML = d.prizes.map(function(p){
     const pct = p.totalQty ? Math.round(p.claimedQty/p.totalQty*100) : 0;
@@ -354,8 +531,6 @@ async function loadDash(){
       +'</tr>';
   }).join('');
 }
-function card(k,v,s){ return '<div class="card"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>'; }
-
 async function adjust(tier){
   const delta = Number(document.getElementById('adj-'+tier).value);
   if(!delta){ show('증감 수량을 입력하세요.', false); return; }
@@ -458,65 +633,21 @@ async function publishRules(){
       pacing:collectPacing(), gameConfig:collectGame(), reason, publishedBy:'admin'})});
     show('v'+r.versionId+' 게시 완료 — 신규 세션부터 적용', true);
     document.getElementById('reason').value='';
-    loadRules(); loadDash();
+    loadRules(); loadPrizes();
   }catch(e){ show(e.message,false); }
 }
 
-/* ---------- 세션 로그 ---------- */
-async function loadSessions(){
-  const st = document.getElementById('stFilter').value;
-  const inc = document.getElementById('incTest').checked ? '1':'0';
-  const d = await api('/api/admin/sessions?limit=200&includeTest='+inc+(st?'&status='+st:''));
-  document.getElementById('sessBody').innerHTML = d.items.map(function(r){
-    const blocked = r.blocked_tiers && r.blocked_tiers !== '{}' ? '<div class="blocked">차단 '+r.blocked_tiers+'</div>' : '';
-    return '<tr>'
-      +'<td class="dev">'+fmt(r.created_at)+'</td>'
-      +'<td>'+r.status+blocked+'</td>'
-      +'<td>'+(r.result_tier?tierSpan(r.result_tier):'-')+'</td>'
-      +'<td class="dev">'+(r.claim_code||'-')+'</td>'
-      +'<td class="dev">'+(r.aim_duration_ms!=null?(r.aim_duration_ms/1000).toFixed(1)+'s':'-')+'</td>'
-      +'<td class="dev">'+(r.auto_catch?'Y':'')+'</td>'
-      +'<td class="dev">'+(r.min_fps??'-')+'</td>'
-      +'<td class="dev">v'+r.rule_version+'</td>'
-      +'<td class="dev">'+(r.is_test?'TEST':'')+'</td>'
-      +'<td class="dev">'+(r.claimed_at?fmt(r.claimed_at)+' / '+r.claimed_by : (r.void_reason||'-'))+'</td>'
-      +'</tr>';
-  }).join('') || '<tr><td colspan=10 class="dev">없음</td></tr>';
-}
-function todayStamp(){
-  const d=new Date(); const p=n=>String(n).padStart(2,'0');
-  return ''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate());
-}
-function downloadCsv(){
-  fetch(API_BASE+'/api/admin/report.csv',{headers:headers()}).then(r=>r.blob()).then(b=>{
-    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
-    a.download='luckydraw-sessions-'+todayStamp()+'.csv'; a.click();
-  });
-}
-function downloadXlsx(){
-  fetch(API_BASE+'/api/admin/report.xlsx',{headers:headers()}).then(r=>r.blob()).then(b=>{
-    const a=document.createElement('a'); a.href=URL.createObjectURL(b);
-    a.download='luckydraw-sessions-'+todayStamp()+'.xlsx'; a.click();
-  });
-}
-async function loadAudit(){
-  const d = await api('/api/admin/audit');
-  document.getElementById('auditBody').innerHTML = d.items.map(r=>
-    '<tr><td class="dev">'+fmt(r.at)+'</td><td>'+r.actor+'</td><td>'+r.action+'</td>'
-    +'<td class="dev">'+(r.target||'-')+'</td><td class="dev">'+(r.reason||'-')+'</td></tr>').join('')
-    || '<tr><td colspan=5 class="dev">없음</td></tr>';
-}
-
 async function load(){
-  if(!KEY){ show('관리자 키 또는 운영자 PIN을 입력하세요.', false); return; }
-  try{ await loadQueue(); await loadDash(); }
+  if(!KEY){ show('경품 · 확률 설정 비밀번호를 입력하세요.', false); return; }
+  try{ await loadPrizes(); await loadRules(); }
   catch(e){ show(e.message, false); }
 }
 load();
-setInterval(()=>{ if(document.getElementById('queue').classList.contains('active')) loadQueue().catch(()=>{}); }, 15000);
 </script>
 </body></html>`;
 
 export async function registerAdminPages(app: FastifyInstance): Promise<void> {
   app.get('/admin', async (_req, reply) => reply.type('text/html; charset=utf-8').send(PAGE));
+  app.get('/admin/dashboard', async (_req, reply) =>
+    reply.type('text/html; charset=utf-8').send(PAGE_DASHBOARD));
 }

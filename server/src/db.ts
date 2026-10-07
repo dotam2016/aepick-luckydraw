@@ -10,18 +10,22 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import {
+  DAILY_RESET_PRIZE_QTY,
   DEFAULT_DEPLETION_POLICY,
   DEFAULT_EVENT_CONFIG,
   DEFAULT_GAME_CONFIG,
   DEFAULT_PACING,
   DEFAULT_PROBABILITIES,
   WIN_TIERS,
+  type DepletionPolicy,
   type EventConfig,
   type GameConfig,
   type LocalizedText,
+  type PacingConfig,
   type Prize,
   type RuleVersion,
   type SessionStatus,
+  type TierProbability,
   type WinTier,
 } from '@aepick/shared';
 
@@ -169,6 +173,19 @@ CREATE TABLE IF NOT EXISTS app_errors (
   at              TEXT NOT NULL
 );
 `);
+
+// 기존 DB에는 없는 컬럼 — 일일 재고 자동 리셋이 "오늘 이미 리셋했는지" 판단하는 데 쓴다.
+const prizeCols = db.prepare('PRAGMA table_info(prizes)').all() as { name: string }[];
+if (!prizeCols.some((c) => c.name === 'last_reset_date')) {
+  db.exec('ALTER TABLE prizes ADD COLUMN last_reset_date TEXT');
+}
+
+// 일일 확률 자동 리셋의 "오늘 이미 리셋했는지" 플래그 — rule_versions.published_at로 판단하면
+// 신규 시드(seedIfEmpty)의 published_at도 "오늘"이라 첫 기동 시 리셋이 건너뛰어진다. 별도 컬럼으로 분리한다.
+const eventCols = db.prepare('PRAGMA table_info(event_config)').all() as { name: string }[];
+if (!eventCols.some((c) => c.name === 'prob_reset_date')) {
+  db.exec('ALTER TABLE event_config ADD COLUMN prob_reset_date TEXT');
+}
 
 /* ---------------- 시드 ---------------- */
 
@@ -344,6 +361,86 @@ export function getEventConfig(): EventConfig {
     claimTtlHours: row.claim_ttl_hours,
     offlineGraceSeconds: row.offline_grace_seconds,
   };
+}
+
+/* ---------------- 규칙 게시 ---------------- */
+
+/** rule_versions에 새 활성 버전을 삽입 — 어드민 게시 API와 일일 자동 리셋이 공유한다. */
+export function publishRuleVersion(input: {
+  probabilities: TierProbability[];
+  depletionPolicy: DepletionPolicy;
+  pacing: PacingConfig;
+  gameConfig: GameConfig;
+  publishedBy: string;
+  reason: string;
+}): number {
+  return transact(() => {
+    db.exec('UPDATE rule_versions SET is_active = 0');
+    const res = db
+      .prepare(
+        `INSERT INTO rule_versions
+         (probabilities, depletion_policy, pacing, game_config, published_at, published_by, reason, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+      )
+      .run(
+        JSON.stringify(input.probabilities),
+        input.depletionPolicy,
+        JSON.stringify(input.pacing),
+        JSON.stringify(input.gameConfig),
+        new Date().toISOString(),
+        input.publishedBy,
+        input.reason,
+      );
+    return Number(res.lastInsertRowid);
+  });
+}
+
+/* ---------------- 일일 재고 리셋 ---------------- */
+
+/**
+ * 매일 0시(Asia/Ho_Chi_Minh) 지정된 등급의 재고를 고정값으로 복원 — 확률 자동 리셋과 같은 개념.
+ * remaining_qty만 목표값으로 맞추고 reserved_qty/claimed_qty(지급 대기·완료 누적)는 그대로 둔다 —
+ * 자정을 넘겨 지급 처리될 수 있는 세션의 예약을 깨지 않기 위해, 기존 ±수량(조정) 공식을 그대로 재사용한다.
+ * 이미 오늘 날짜로 리셋된 등급은 건너뛴다(10분 주기 스케줄러가 하루에 한 번만 적용되도록).
+ */
+export function resetDailyPrizeStock(
+  todayStr: string,
+): { tier: WinTier; before: number; after: number }[] {
+  return transact(() => {
+    const changed: { tier: WinTier; before: number; after: number }[] = [];
+    for (const [tier, targetQty] of Object.entries(DAILY_RESET_PRIZE_QTY) as [WinTier, number][]) {
+      const row = db
+        .prepare('SELECT remaining_qty, last_reset_date FROM prizes WHERE tier = ?')
+        .get(tier) as { remaining_qty: number; last_reset_date: string | null } | undefined;
+      if (!row || row.last_reset_date === todayStr) continue;
+
+      const delta = targetQty - row.remaining_qty;
+      db.prepare(
+        `UPDATE prizes
+         SET remaining_qty = remaining_qty + ?, total_qty = MAX(total_qty + ?, 0),
+             day_start_qty = ?, last_reset_date = ?
+         WHERE tier = ?`,
+      ).run(delta, delta, targetQty, todayStr, tier);
+      changed.push({ tier, before: row.remaining_qty, after: targetQty });
+    }
+    return changed;
+  });
+}
+
+/**
+ * 일일 확률 자동 리셋이 "오늘 이미 적용했는지" 판단하는 플래그.
+ * rule_versions.published_at 대신 별도 컬럼을 쓰는 이유: 신규 시드 직후에도 null이라
+ * 첫 기동 시 정상적으로 리셋이 걸린다(§ resetDailyPrizeStock의 last_reset_date와 동일한 설계).
+ */
+export function getProbResetDate(): string | null {
+  const row = db.prepare('SELECT prob_reset_date FROM event_config WHERE id = 1').get() as {
+    prob_reset_date: string | null;
+  };
+  return row.prob_reset_date;
+}
+
+export function setProbResetDate(todayStr: string): void {
+  db.prepare('UPDATE event_config SET prob_reset_date = ? WHERE id = 1').run(todayStr);
 }
 
 /* ---------------- 로그 ---------------- */

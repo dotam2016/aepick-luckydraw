@@ -16,9 +16,9 @@ import {
   type ResultTier,
   type TierProbability,
 } from '@aepick/shared';
-import { db, getActiveRule, getEventConfig, listPrizes, logAudit, transact } from './db.js';
+import { db, getActiveRule, getEventConfig, listPrizes, logAudit, publishRuleVersion } from './db.js';
 import { ServiceError, computeAvailability, expirePendingClaims } from './sessionService.js';
-import { requireAdmin, requireOperator } from './routes.js';
+import { requireAdmin, requireDashboard, requireOperator } from './routes.js';
 
 export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   /* ---------- 운영 대시보드 ---------- */
@@ -176,10 +176,33 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     return reply.send({ items: rows });
   });
 
+  /* ---------- 경품 · 확률 설정 페이지(/admin/dashboard) 전용 요약 ---------- */
+
+  app.get('/api/admin/dashboard-summary', async (req, reply) => {
+    if (!requireDashboard(req, reply)) return;
+    const event = getEventConfig();
+    const rule = getActiveRule();
+    return reply.send({
+      event,
+      ruleVersion: rule.versionId,
+      prizes: listPrizes().map((p) => ({
+        tier: p.tier,
+        name: p.name,
+        totalQty: p.totalQty,
+        remainingQty: p.remainingQty,
+        reservedQty: p.reservedQty,
+        claimedQty: p.claimedQty,
+        dailyCap: p.dailyCap,
+        eventCap: p.eventCap,
+        active: p.active,
+      })),
+    });
+  });
+
   /* ---------- 확률 설정 게시 (§9.3) ---------- */
 
   app.post('/api/admin/rules/validate', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requireDashboard(req, reply)) return;
     const b = (req.body ?? {}) as {
       probabilities?: TierProbability[];
       pacing?: PacingConfig;
@@ -198,7 +221,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post('/api/admin/rules/publish', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requireDashboard(req, reply)) return;
     try {
       const b = (req.body ?? {}) as {
         probabilities?: TierProbability[];
@@ -227,24 +250,13 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         return reply.code(400).send({ error: 'VALIDATION_FAILED', issues: validation.issues });
       }
 
-      const versionId = transact(() => {
-        db.exec('UPDATE rule_versions SET is_active = 0');
-        const res = db
-          .prepare(
-            `INSERT INTO rule_versions
-             (probabilities, depletion_policy, pacing, game_config, published_at, published_by, reason, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
-          )
-          .run(
-            JSON.stringify(probabilities),
-            depletionPolicy,
-            JSON.stringify(pacing),
-            JSON.stringify(gameConfig),
-            new Date().toISOString(),
-            publishedBy,
-            reason,
-          );
-        return Number(res.lastInsertRowid);
+      const versionId = publishRuleVersion({
+        probabilities,
+        depletionPolicy,
+        pacing,
+        gameConfig,
+        publishedBy,
+        reason,
       });
 
       logAudit(publishedBy, 'rules.publish', {
@@ -265,7 +277,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get('/api/admin/rules', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requireDashboard(req, reply)) return;
     const rows = db
       .prepare(
         `SELECT version_id, probabilities, depletion_policy, pacing, published_at, published_by, reason, is_active
@@ -289,7 +301,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   /* ---------- 경품 / 재고 조정 ---------- */
 
   app.post('/api/admin/prizes/:tier', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requireDashboard(req, reply)) return;
     const { tier } = req.params as { tier: string };
     if (!WIN_TIERS.includes(tier as never)) {
       return reply.code(400).send({ error: 'BAD_TIER', message: '당첨 등급만 수정할 수 있습니다.' });
@@ -319,7 +331,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.post('/api/admin/prizes/:tier/adjust', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requireDashboard(req, reply)) return;
     const { tier } = req.params as { tier: string };
     const b = (req.body ?? {}) as { delta?: number; reason?: string; actor?: string };
     const delta = Math.trunc(Number(b.delta ?? 0));
@@ -347,7 +359,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
 
   /** 일일 오픈 시 day_start_qty를 현재 재고로 리셋 — 고정 쿼터 페이싱의 기준값 */
   app.post('/api/admin/prizes/day-start', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
+    if (!requireDashboard(req, reply)) return;
     db.exec('UPDATE prizes SET day_start_qty = remaining_qty');
     logAudit('admin', 'prize.dayStart');
     return reply.send({ ok: true });

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hướng dẫn sử dụng trang Admin — AEPICK Lucky Draw</title>
+<style>
+  :root{
+    --bg:#0f1420; --panel:#171e2d; --panel2:#1e2739;
+    --line:#2b3549; --text:#e8edf6; --dim:#8fa0bd; --accent:#5b8cff;
+    --ok:#3fbf7f; --warn:#e8a53d; --bad:#e8564f; --gold:#e9c46a;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",sans-serif}
+  html{scroll-behavior:smooth}
+  header{padding:28px 24px 18px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  header h1{margin:0 0 6px;font-size:21px}
+  header p{margin:0;color:var(--dim);font-size:13px}
+  .layout{display:flex;gap:28px;max-width:1180px;margin:0 auto;padding:24px}
+  nav.toc{flex:0 0 220px;position:sticky;top:calc(var(--header-h, 110px) + 20px);align-self:flex-start}
+  nav.toc a{display:block;color:var(--dim);text-decoration:none;font-size:13px;padding:6px 0;border-left:2px solid transparent}
+  nav.toc a:hover{color:var(--text)}
+  nav.toc a.tabnum{color:var(--accent);font-weight:600}
+  main{flex:1;min-width:0}
+  section{margin-bottom:46px;padding-bottom:10px;border-bottom:1px dashed var(--line);
+          scroll-margin-top:calc(var(--header-h, 110px) + 16px)}
+  section:last-child{border-bottom:0}
+  h2{font-size:18px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  h2 .tabno{font-size:14px;background:var(--accent);color:#fff;border-radius:99px;padding:4px 12px;font-weight:700}
+  h2 .korean{color:var(--dim);font-size:13px;font-weight:400}
+  h3{font-size:14.5px;margin:22px 0 8px;color:var(--text)}
+  p{margin:6px 0}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);
+        border-radius:8px;padding:12px 14px;margin:12px 0;font-size:13.5px;color:var(--dim)}
+  .note b{color:var(--text)}
+  .warnbox{background:rgba(232,165,61,.08);border:1px solid rgba(232,165,61,.35);border-left:3px solid var(--warn);
+           border-radius:8px;padding:12px 14px;margin:12px 0;font-size:13.5px;
+           scroll-margin-top:calc(var(--header-h, 110px) + 16px)}
+  .warnbox b{color:var(--warn)}
+  .warnbox:target{box-shadow:0 0 0 2px var(--warn)}
+  .jump-red{color:var(--bad);font-weight:600}
+  .jump-red a{color:var(--bad);text-decoration:underline}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0 18px;background:var(--panel);
+        border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel2);color:var(--dim);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  tr:last-child td{border-bottom:0}
+  code, .ui{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);
+       color:var(--gold);padding:1px 6px;border-radius:5px;font-size:13px;white-space:nowrap}
+  .btn-ui{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--accent);
+       color:#fff;padding:2px 8px;border-radius:5px;font-size:12.5px;white-space:nowrap}
+  .col-ui{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);
+       color:var(--dim);padding:1px 6px;border-radius:5px;font-size:12.5px}
+  ul{margin:8px 0;padding-left:20px}
+  li{margin:4px 0}
+  .tier{font-weight:600}
+  .t1{color:var(--gold)} .t2{color:#f2a6c0} .t3{color:#8fd3f4} .t4{color:#a9e5c0} .t5{color:#c9d5e8}
+  .top-link{display:inline-block;margin-top:14px;font-size:12px;color:var(--dim);text-decoration:none}
+  .top-link:hover{color:var(--text)}
+  @media (max-width: 860px){
+    .layout{flex-direction:column}
+    nav.toc{position:static;width:100%}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Hướng dẫn sử dụng trang Admin — AEPICK Lucky Draw</h1>
+  <p>Giải thích từng tab, từng cột, từng nút trên <code>/admin</code>. Tên nút/tên cột giữ nguyên chữ hiển thị trên UI (tiếng Hàn) để bạn dễ Ctrl+F tìm đúng vị trí trên màn hình thật.</p>
+</header>
+
+<div class="layout">
+  <nav class="toc" id="toc">
+    <a href="#dangnhap">Đăng nhập (ô khóa)</a>
+    <a class="tabnum" href="#tab1">① 지급 큐 — Hàng chờ phát quà</a>
+    <a class="tabnum" href="#tab2">② 운영 대시보드 — Bảng vận hành</a>
+    <a class="tabnum" href="#tab3">③ 경품 · 재고 — Giải thưởng · Kho</a>
+    <a class="tabnum" href="#tab4">④ 확률 설정 — Cấu hình tỉ lệ</a>
+    <a class="tabnum" href="#tab5">⑤ 세션 로그 — Log phiên chơi</a>
+    <a class="tabnum" href="#tab6">⑥ 감사 로그 — Log kiểm toán</a>
+  </nav>
+
+  <main>
+
+  <section id="dangnhap">
+    <h2>Đăng nhập trang Admin</h2>
+    <p>Ở góc trên cùng bên phải có ô nhập <span class="col-ui">관리자 키 / 운영자 PIN</span> và nút <span class="btn-ui">저장</span> (Lưu).</p>
+    <ul>
+      <li>Nhập admin key (mặc định <code>aepick-admin</code>, đổi được qua biến môi trường <code>ADMIN_KEY</code>) vào ô này rồi bấm <span class="btn-ui">저장</span>.</li>
+      <li>Hệ thống dùng chung 1 ô này cho cả 2 quyền (header <code>x-admin-key</code> và <code>x-operator-pin</code>) — nên chỉ cần nhập admin key là dùng được mọi chức năng, kể cả các thao tác nhạy cảm (chỉnh tỉ lệ, chỉnh kho).</li>
+      <li>Key được lưu trong <code>localStorage</code> của trình duyệt — mở lại trang không cần nhập lại, trừ khi xoá cache/đổi máy.</li>
+    </ul>
+    <p>Hai nhãn (badge) cạnh tên hệ thống ở đầu trang:</p>
+    <ul>
+      <li><span class="col-ui">운영 중 / 행사 OFF / 긴급 중지</span> — trạng thái sự kiện hiện tại (đang mở / đã tắt / đang dừng khẩn cấp).</li>
+      <li><span class="col-ui">규칙 vN</span> — số phiên bản cấu hình tỉ lệ (<code>rule_version</code>) đang active, dùng để đối chiếu với tab ④.</li>
+    </ul>
+  </section>
+
+  <!-- TAB 1 -->
+  <section id="tab1">
+    <h2><span class="tabno">Tab 1</span> 지급 큐 <span class="korean">(Hàng chờ phát quà)</span></h2>
+    <p>Đây là tab mặc định khi mở trang — dùng cho nhân viên đứng quầy phát quà trực tiếp cho khách đã chơi trúng.</p>
+
+    <h3>Thanh công cụ trên cùng</h3>
+    <ul>
+      <li>Ô <span class="col-ui">코드 6자리</span> — nhập mã 6 số khách đưa (mã nhận quà), sau đó bấm nút <span class="btn-ui">코드로 지급 완료</span> để đánh dấu đã phát quà cho đúng mã đó.</li>
+      <li>Nút <span class="btn-ui">새로고침</span> — tải lại danh sách hàng chờ (dùng khi vừa có khách chơi mới mà danh sách chưa tự cập nhật).</li>
+      <li>Dòng chữ nhỏ <i>"경과 10분 초과 주황 · 30분 초과 적색"</i> — giải thích màu cảnh báo: khách chờ quá 10 phút chưa nhận quà thì dòng chuyển <b>màu cam</b>, quá 30 phút thì chuyển <b>màu đỏ đậm</b> — để nhân viên ưu tiên xử lý người chờ lâu trước.</li>
+    </ul>
+
+    <h3>Bảng <span class="col-ui">지급 대기 (PENDING_CLAIM · EXPIRED)</span></h3>
+    <p>Danh sách tất cả khách đã chơi trúng giải nhưng <b>chưa nhận quà</b>, kể cả người đã quá hạn nhận (<code>EXPIRED</code>).</p>
+    <table>
+      <tr><th>Cột</th><th>Ý nghĩa</th></tr>
+      <tr><td class="col-ui">코드</td><td>Mã 6 số để tra cứu/nhận quà.</td></tr>
+      <tr><td class="col-ui">등급</td><td>Hạng giải trúng (1등/2등/3등/4등/5등).</td></tr>
+      <tr><td class="col-ui">경품</td><td>Tên phần quà cụ thể của hạng đó.</td></tr>
+      <tr><td class="col-ui">경과</td><td>Số phút đã trôi qua từ lúc trúng đến giờ (gắn với cảnh báo màu cam/đỏ nói trên).</td></tr>
+      <tr><td class="col-ui">기기</td><td>ID máy kiosk nơi khách đã chơi.</td></tr>
+      <tr><td class="col-ui">만료</td><td>Thời điểm mã hết hạn nhận quà (quá giờ này mã chuyển <code>EXPIRED</code>).</td></tr>
+      <tr><td class="col-ui">처리</td><td>2 nút hành động — xem bên dưới.</td></tr>
+    </table>
+
+    <h3>2 nút ở cột <span class="col-ui">처리</span></h3>
+    <ul>
+      <li><span class="btn-ui">지급 완료</span> — xác nhận đã trao quà tận tay khách cho đúng dòng đó. Có hỏi xác nhận trước khi thực hiện.</li>
+      <li><span class="btn-ui">무효</span> (nút màu đỏ) — huỷ/vô hiệu dòng đó (ví dụ khách không đến nhận, hoặc phát hiện gian lận). Bắt buộc phải nhập lý do khi bấm.</li>
+    </ul>
+    <p>Danh sách này tự làm mới mỗi 15 giây khi đang mở tab này, không cần bấm <span class="btn-ui">새로고침</span> liên tục.</p>
+  </section>
+
+  <!-- TAB 2 -->
+  <section id="tab2">
+    <h2><span class="tabno">Tab 2</span> 운영 대시보드 <span class="korean">(Bảng vận hành)</span></h2>
+    <p>Tổng quan số liệu vận hành trong ngày — tính từ thời điểm <span class="col-ui">openAt</span> của sự kiện tới hiện tại.</p>
+
+    <h3>Các thẻ số liệu (KPI)</h3>
+    <table>
+      <tr><th>Thẻ</th><th>Ý nghĩa</th></tr>
+      <tr><td>플레이</td><td>Tổng số lượt chơi đã hoàn tất (không tính session test).</td></tr>
+      <tr><td>지급 대기</td><td>Số lượt đang chờ phát quà (<code>PENDING_CLAIM</code>) — khớp với số dòng ở Tab 1.</td></tr>
+      <tr><td>지급 완료</td><td>Số lượt đã phát quà xong (<code>CLAIMED</code>).</td></tr>
+      <tr><td>평균 조준</td><td>Thời gian ngắm trung bình của khách (giây).</td></tr>
+      <tr><td>결과→지급 격차</td><td>Thời gian trung bình từ lúc có kết quả đến lúc phát quà xong — chỉ số đánh giá tốc độ phục vụ của quầy.</td></tr>
+      <tr><td>평균 최소fps</td><td>FPS thấp nhất trung bình trên máy khách — chỉ số hiệu năng kỹ thuật, kèm số lượt bị dưới 30fps.</td></tr>
+      <tr><td>무효/만료</td><td>Số lượt bị huỷ (<code>VOIDED</code>) / số lượt hết hạn chưa nhận (<code>EXPIRED</code>).</td></tr>
+      <tr><td>오류</td><td>Số lỗi hệ thống ghi nhận được trong ngày.</td></tr>
+    </table>
+
+    <h3>Bảng <span class="col-ui">등급별 분포 — 설정 확률 대비 실제</span></h3>
+    <p>So sánh tỉ lệ <b>thực tế đã ra</b> với tỉ lệ <b>đang cấu hình</b> ở Tab ④, để phát hiện sớm nếu tỉ lệ ra lệch bất thường.</p>
+    <table>
+      <tr><th>Cột</th><th>Ý nghĩa</th></tr>
+      <tr><td class="col-ui">등급</td><td>Hạng giải (hoặc 꽝 = trượt).</td></tr>
+      <tr><td class="col-ui">당첨 수</td><td>Số lượt đã rơi vào hạng đó trong ngày.</td></tr>
+      <tr><td class="col-ui">실제 %</td><td>Tỉ lệ thực tế = (số lượt hạng đó / tổng số lượt) × 100.</td></tr>
+      <tr><td class="col-ui">설정 %</td><td>Tỉ lệ đang cấu hình trong rule đang active (Tab ④).</td></tr>
+      <tr><td class="col-ui">편차</td><td>Thực tế trừ cấu hình — lệch dương/âm bao nhiêu %.</td></tr>
+      <tr><td class="col-ui">가용성</td><td>Hạng đó hiện còn <b>cấp được</b> không: hiện <span style="color:var(--ok)">가능</span> (còn) hoặc <span style="color:var(--warn)">차단 · &lt;lý do&gt;</span> (đang bị chặn). Lý do chặn có thể là: <code>비활성</code> (tắt giải), <code>재고 없음</code> (hết kho), <code>일일 상한</code> (đã đạt giới hạn trúng/ngày), <code>행사 상한</code> (đã đạt giới hạn trúng toàn sự kiện), <code>시간대 쿼터</code> (hết quota của khung giờ hiện tại, do pacing).</td></tr>
+    </table>
+
+    <h3>Bảng <span class="col-ui">세션 상태</span></h3>
+    <p>Đếm số lượt chơi theo từng trạng thái phiên (<code>DRAWN</code>, <code>PLAYED</code>, <code>PENDING_CLAIM</code>, <code>CLAIMED</code>, <code>VOIDED</code>, <code>EXPIRED</code>, <code>ABORTED</code>).</p>
+  </section>
+
+  <!-- TAB 3 -->
+  <section id="tab3">
+    <h2><span class="tabno">Tab 3</span> 경품 · 재고 <span class="korean">(Giải thưởng · Kho)</span></h2>
+    <p>Đây là nơi quản lý <b>số lượng tồn kho thực tế</b> của từng hạng giải — hoàn toàn khác với tab ④ (tỉ lệ % trúng). Tỉ lệ quyết định % cơ hội mỗi lượt chơi, kho quyết định còn bao nhiêu phần quà thật để phát. Nếu kho của 1 hạng về 0, hệ thống tự coi các lượt trúng hạng đó là trượt (theo chính sách 소진 정책 ở Tab ④), không cần bạn phải tắt tay.</p>
+
+    <h3>Nút <span class="btn-ui">일일 오픈 — 기준 재고 리셋</span></h3>
+    <div class="note">
+      Ghi lại <b>tồn kho hiện tại</b> làm "mốc đầu ngày" (<code>day_start_qty</code>) cho tất cả hạng giải cùng lúc.<br>
+      Mốc này chỉ dùng cho tính năng <b>페이싱 (pacing)</b> ở Tab ④ — khi pacing bật, hệ thống dùng mốc này để tính "còn lại bao nhiêu phần trong khung giờ hiện tại" nhằm dàn giải ra đều trong ngày, tránh phát hết sớm.<br>
+      <b>Không</b> làm tăng/giảm số lượng giải thật — chỉ là lấy mốc để tính toán. Nếu không dùng pacing thì không cần bấm nút này.
+    </div>
+
+    <h3>Bảng <span class="col-ui">경품 · 재고</span></h3>
+    <table>
+      <tr><th>Cột</th><th>Ý nghĩa</th></tr>
+      <tr><td class="col-ui">등급</td><td>Hạng giải (1등 … 5등).</td></tr>
+      <tr><td class="col-ui">경품명(ko)</td><td>Tên phần quà (hiển thị bản tiếng Hàn trong bảng admin) + thanh tiến độ phát quà (<code>claimedQty / totalQty</code>).</td></tr>
+      <tr><td class="col-ui">총</td><td><code>totalQty</code> — tổng số lượng quà đã nhập kho cho hạng này từ đầu tới giờ.</td></tr>
+      <tr><td class="col-ui">available</td><td><code>remainingQty</code> — số quà <b>còn lại chưa trúng</b>, in đậm. Đây là số quyết định hạng giải còn "cấp được" hay không.</td></tr>
+      <tr><td class="col-ui">reserved</td><td><code>reservedQty</code> — số đã trúng, đang chờ phát (khớp với Tab 1), chưa trừ hẳn khỏi kho.</td></tr>
+      <tr><td class="col-ui">claimed</td><td><code>claimedQty</code> — số đã phát xong tận tay khách.</td></tr>
+      <tr><td class="col-ui">일일상한</td><td><code>dailyCap</code> — giới hạn số lượt <b>được trúng</b> hạng này trong 1 ngày (vd giải nhất chỉ cho trúng tối đa 1 lần/ngày dù kho còn nhiều). "-" nghĩa là không giới hạn.</td></tr>
+      <tr><td class="col-ui">행사상한</td><td><code>eventCap</code> — giới hạn số lượt được trúng hạng này trong <b>toàn bộ sự kiện</b> (nhiều ngày cộng lại). "-" nghĩa là không giới hạn.</td></tr>
+      <tr><td class="col-ui">활성</td><td>Hạng giải đang <span style="color:var(--ok)">ON</span> (có thể trúng) hay <span style="color:var(--bad)">OFF</span> (tạm khoá, không ai trúng được hạng này dù kho còn).</td></tr>
+      <tr><td class="col-ui">재고 조정</td><td>Ô nhập số + 2 nút — xem chi tiết ngay dưới.</td></tr>
+    </table>
+
+    <h3>Cách <b>tăng/giảm số lượng giải trong ngày</b> (ô <span class="col-ui">재고 조정</span>)</h3>
+    <p>Đây chính là cách xử lý tình huống "giải ba hết sớm buổi sáng, muốn cấp thêm":</p>
+    <ol>
+      <li>Tìm đúng dòng hạng giải cần chỉnh (ví dụ giải ba — <span class="tier t3">3등</span>).</li>
+      <li>Nhập số vào ô <span class="col-ui">±수량</span>: số dương (ví dụ <code>20</code>) để <b>cộng thêm</b> 20 phần quà vào kho; số âm (ví dụ <code>-5</code>) để <b>trừ bớt</b> (ví dụ phát hiện nhập kho dư).</li>
+      <li>Bấm nút <span class="btn-ui">조정</span>.</li>
+      <li>Hệ thống hỏi lý do (bắt buộc nhập, ví dụ "bổ sung thêm do hết sớm buổi sáng") — đây là thông tin bắt buộc để lưu vào Tab ⑥ (감사 로그) sau này tra lại.</li>
+      <li>Có hiệu lực <b>ngay lập tức</b>: cả <code>available</code> và <code>총</code> tăng thêm đúng số đã nhập, khách chơi ngay sau đó có thể trúng và nhận giải ba bình thường.</li>
+    </ol>
+    <p>Lưu ý: hệ thống không cho chỉnh để <code>available</code> bị âm — nếu nhập số âm lớn hơn tồn kho hiện có sẽ bị báo lỗi, không thực hiện.</p>
+
+    <h3>Nút <span class="btn-ui">중지</span> / <span class="btn-ui">활성</span></h3>
+    <p>Bật/tắt nhanh hạng giải đó (đổi cột <span class="col-ui">활성</span> ON ↔ OFF) — dùng khi muốn tạm ngưng cấp 1 hạng giải mà không cần đổi tỉ lệ % hay đổi số lượng kho.</p>
+  </section>
+
+  <!-- TAB 4 -->
+  <section id="tab4">
+    <h2><span class="tabno">Tab 4</span> 확률 설정 <span class="korean">(Cấu hình tỉ lệ)</span></h2>
+    <p>Tiêu đề trong trang: <i>"확률 설정 — 합계 100.000%가 아니면 게시할 수 없습니다"</i> — nghĩa là <b>không thể bấm 게시 (Publish) nếu tổng tỉ lệ các hạng chưa đúng 100.000%</b>.</p>
+
+    <div class="warnbox" id="daily-reset-info">
+      <b>Quan trọng — cơ chế tự động reset mỗi ngày:</b> kể từ bản cập nhật gần nhất, hệ thống sẽ <b>tự động đưa tỉ lệ về mặc định</b>
+      (1등 10% · 2등 20% · 3등 35% · 4등/5등 0% · 꽝 35%) vào <b>0h mỗi ngày (giờ Việt Nam)</b>.
+      Bất kỳ thay đổi bạn 게시 (publish) trong ngày chỉ có hiệu lực <b>cho đến hết ngày đó</b> — qua 0h hôm sau tự quay về mặc định trên,
+      không cần bạn phải vào chỉnh lại tay. Muốn đổi con số mặc định này (ví dụ đổi phần trăm) phải báo để sửa code, trang admin hiện chưa có nút chỉnh mặc định.
+    </div>
+
+    <h3>Khối nhập tỉ lệ từng hạng</h3>
+    <p>Mỗi hạng có 1 ô input riêng, nhãn <span class="col-ui">1등 %</span> / <span class="col-ui">2등 %</span> / <span class="col-ui">3등 %</span> / <span class="col-ui">4등 %</span> / <span class="col-ui">5등 %</span> / <span class="col-ui">꽝 %</span> (꽝 = trượt). Nhập được tới 3 số thập phân.</p>
+    <ul>
+      <li><span class="col-ui">합계</span> — ô hiển thị tổng % hiện tại, tự tính khi bạn gõ. Chuyển <b>màu xanh</b> khi đúng 100.000%, <b>màu đỏ</b> khi sai — sai thì nút 게시 tự khoá, không bấm được.</li>
+    </ul>
+
+    <h3>Các lựa chọn khác trong form</h3>
+    <table>
+      <tr><th>Trường</th><th>Ý nghĩa</th></tr>
+      <tr><td class="col-ui">소진 정책</td><td>
+        Quy định cách xử lý phần % của 1 hạng khi hạng đó <b>bị chặn</b> (hết kho <code>재고 없음</code>, bị tắt <code>비활성</code>, đã đạt <code>일일상한</code>/<code>행사상한</code>, hoặc hết quota khung giờ <code>시간대 쿼터</code> do pacing) — phần % đó phải "đi đâu" để tổng vẫn luôn đúng 100% mỗi lượt quay:
+        <ul style="margin-top:6px">
+          <li><span class="col-ui">꽝 귀속 (권고)</span> (<code>toMiss</code>, khuyến nghị) — toàn bộ % của (các) hạng bị chặn được <b>dồn thẳng vào 꽝 (trượt)</b>. Các hạng khác không bị chặn vẫn giữ nguyên đúng % đã cấu hình, không đổi.<br>
+            Ví dụ: cấu hình 1등 10% · 2등 20% · 3등 35% · 꽝 35%. Nếu giải nhất (1등) hết kho → 10% đó cộng vào 꽝: thực tế quay sẽ là 1등 0% (không thể trúng) · 2등 20% · 3등 35% · 꽝 45%. 2등, 3등 không bị ảnh hưởng gì.</li>
+          <li><span class="col-ui">비례 재정규화</span> (<code>renormalize</code>) — % của (các) hạng bị chặn được <b>chia lại cho tất cả kết quả còn hoạt động</b> (gồm cả các hạng chưa hết kho <i>và</i> cả 꽝), theo đúng tỉ trọng % hiện có của từng bên — hạng nào đang có % lớn hơn thì được chia phần lớn hơn. 꽝 cũng được chia thêm một phần, không giữ nguyên 35% như cấu hình gốc.<br>
+            Ví dụ: cùng cấu hình 1등 10% · 2등 20% · 3등 35% · 꽝 35% (tổng các hạng còn sống sau khi bỏ 1등 là 20+35+35=90). Giải nhất hết kho → 10% đó chia theo tỉ lệ 20:35:35 cho 2등/3등/꽝 → 2등 ≈ 10+2.22=22.22% · 3등 ≈ 35+3.89=38.89% · 꽝 ≈ 35+3.89=38.89%. Vừa tăng khả năng trúng 2등/3등, vừa tăng luôn cả khả năng trượt.</li>
+        </ul>
+        <b>Khác biệt cốt lõi:</b> <code>toMiss</code> chỉ tăng khả năng trượt, không ảnh hưởng tới các hạng giải khác vẫn còn hàng — an toàn, dễ kiểm soát hơn (vì vậy được khuyến nghị 권고). <code>renormalize</code> "bù" phần hết hàng đó sang cả các hạng còn hàng khác (khách có xu hướng dễ trúng hạng khác hơn khi 1 hạng hết), nhưng cũng kéo khả năng trượt tăng theo, khó dự đoán hơn khi nhiều hạng cùng hết kho một lúc.
+      </td></tr>
+      <tr><td class="col-ui">페이싱</td><td>
+        Bật/tắt tính năng dàn trải giải theo thời gian trong ngày (áp dụng cho các hạng khai báo ở <span class="col-ui">페이싱 대상 등급</span>):
+        <ul style="margin-top:6px">
+          <li><span class="col-ui">미사용</span> (tắt) — <b>không giới hạn gì cả theo thời gian</b>. Hạng giải có thể trúng liên tục bất cứ lúc nào trong ngày, miễn còn <code>available</code> &gt; 0 và chưa đạt <code>일일상한</code>/<code>행사상한</code>. Rủi ro: nếu khách chơi dồn vào buổi sáng, kho có thể hết sạch ngay trong vài giờ đầu, buổi chiều/tối không còn gì để trúng — các ô <span class="col-ui">버킷(분)</span>, <span class="col-ui">쿼터 해제(분 전)</span>, <span class="col-ui">이월</span>, <span class="col-ui">페이싱 대상 등급</span> bên dưới bị bỏ qua hoàn toàn, nhập gì cũng không có tác dụng.</li>
+          <li><span class="col-ui">사용</span> (bật) — hệ thống chia 1 ngày (<code>openAt</code> → <code>closeAt</code>) thành nhiều "khung giờ" theo <span class="col-ui">버킷(분)</span>, rồi tính ra <b>hạn mức trúng tối đa cho mỗi khung giờ</b> của từng hạng:
+            <ul>
+              <li>Nếu <span class="col-ui">이월</span> = <span class="col-ui">이월</span>: hạn mức khung hiện tại = (kho còn lại) ÷ (số khung giờ còn lại tính cả khung này). Khung trước dùng không hết thì phần dư tự dồn sang khung sau (vì công thức luôn chia lại trên kho còn thực tế).</li>
+              <li>Nếu <span class="col-ui">이월</span> = <span class="col-ui">고정</span>: hạn mức mỗi khung = (kho lúc đầu ngày, mốc <code>day_start_qty</code> — xem nút <span class="col-ui">일일 오픈</span> ở Tab ③) ÷ (tổng số khung trong ngày). Cố định, không dồn khung trước sang khung sau.</li>
+            </ul>
+            Khi 1 hạng đã trúng đủ hạn mức của khung giờ hiện tại, hạng đó bị <b>tạm chặn</b> (hiện lý do <code>시간대 쿼터</code> ở Tab ②/⑤) cho tới khung giờ kế tiếp — dù kho vẫn còn hàng.<br>
+            Riêng <span class="col-ui">쿼터 해제(분 전)</span> phút cuối trước giờ đóng sự kiện: hạn mức tự mở khoá hoàn toàn (không giới hạn nữa), để tránh hết giờ mà kho vẫn còn tồn chưa phát hết.
+          </li>
+        </ul>
+      </td></tr>
+      <tr><td class="col-ui">버킷(분)</td><td>
+        Độ dài 1 "khung giờ" pacing, tính bằng phút (cho phép 5–240). Hệ thống chia khoảng thời gian <code>openAt</code> → <code>closeAt</code> thành nhiều khung liên tiếp, đều nhau theo số phút này, bắt đầu tính từ đúng giờ mở sự kiện.<br>
+        Ví dụ: sự kiện mở 10:00, đóng 20:00 (tổng 600 phút). Nếu đặt <span class="col-ui">버킷(분)</span> = 60 → có 10 khung: 10:00–11:00, 11:00–12:00, …, 19:00–20:00. Nếu đặt = 120 → chỉ còn 5 khung, mỗi khung 2 giờ.<br>
+        Khung <b>càng ngắn</b> → giải được rải đều hơn theo từng giờ nhỏ, nhưng hạn mức mỗi khung cũng nhỏ hơn (dễ bị chặn <code>시간대 쿼터</code> nếu nhiều khách chơi dồn trong 1 khung ngắn). Khung <b>càng dài</b> → hạn mức mỗi khung lớn hơn, ít bị chặn hơn, nhưng độ "rải đều" trong ngày kém hơn.
+      </td></tr>
+      <tr><td class="col-ui">쿼터 해제(분 전)</td><td>
+        Số phút tính ngược từ giờ đóng sự kiện (<code>closeAt</code>) — kể từ mốc này tới hết giờ đóng, hạn mức pacing của tất cả khung giờ bị <b>mở khoá hoàn toàn</b> (không giới hạn nữa, trúng tự do như khi tắt pacing), miễn là kho vẫn còn hàng (cho phép 0–480 phút).<br>
+        Mục đích: tránh tình trạng gần hết giờ mà kho vẫn còn tồn chưa phát hết chỉ vì bị kẹt hạn mức khung giờ.<br>
+        Ví dụ: đóng sự kiện 20:00, đặt <span class="col-ui">쿼터 해제(분 전)</span> = 120 → từ 18:00 đến 20:00, mọi hạn mức khung giờ (mục 버킷(분) ở trên) bị bỏ qua, ai chơi trúng vẫn được tính miễn kho còn. Đặt = 0 → tắt hẳn tính năng này, hạn mức áp dụng tới sát giờ đóng.
+      </td></tr>
+      <tr><td class="col-ui">이월</td><td>
+        Quy định cách tính hạn mức (quota) của <b>từng khung giờ</b> — chọn 1 trong 2:
+        <ul style="margin-top:6px">
+          <li><span class="col-ui">이월</span> (carry-over, cho phép dồn) — mỗi lần tính, hạn mức khung hiện tại = <b>(kho còn lại thật tại thời điểm đó)</b> ÷ <b>(số khung còn lại, tính cả khung hiện tại)</b>. Vì luôn chia lại trên số kho còn thực tế, nếu khung trước dùng không hết thì phần dư tự động "dồn" vào khung sau dưới dạng hạn mức cao hơn — không cần cơ chế cộng dồn riêng, tự ra từ công thức.<br>
+            Ví dụ: giải ba còn 30 phần lúc 10:00, chia 10 khung (60 phút/khung) → khung đầu (10–11h) hạn mức = 30÷10 = 3. Giả sử khung đó chỉ có 1 người trúng (còn 29 phần), sang khung 2 (11–12h) còn 9 khung phía trước tính luôn khung này → hạn mức = 29÷9 ≈ 4 (tăng lên, "bù" lại phần 2 suất chưa dùng ở khung trước).</li>
+          <li><span class="col-ui">고정</span> (fixed, không dồn) — hạn mức mỗi khung = <b>(kho tại mốc đầu ngày <code>day_start_qty</code>)</b> ÷ <b>(tổng số khung trong ngày)</b> — tính 1 lần, dùng chung y nguyên cho mọi khung suốt cả ngày, bất kể khung trước dùng hết hay chưa.<br>
+            Cùng ví dụ trên: <code>day_start_qty</code> = 30, 10 khung → mọi khung đều có hạn mức cố định 30÷10 = 3. Khung 1 chỉ dùng 1/3 thì 2 suất dư đó <b>mất luôn</b>, khung 2 vẫn chỉ được tối đa 3, không được bù thêm — số dư tích lại chỉ được "giải phóng" khi vào khoảng thời gian <span class="col-ui">쿼터 해제(분 전)</span> ở trên.<br>
+            Lưu ý quan trọng: chế độ này đọc giá trị <code>day_start_qty</code> — là mốc được ghi lại bởi nút <span class="col-ui">일일 오픈 — 기준 재고 리셋</span> ở Tab ③. Nếu quên bấm nút đó vào đầu ngày mới, <code>day_start_qty</code> sẽ là số liệu cũ từ lần bấm trước, khiến hạn mức mỗi khung tính sai lệch với kho thật hiện tại.</li>
+        </ul>
+        <b>Chọn nhanh:</b> không chắc nên dùng gì thì để <span class="col-ui">이월</span> (giá trị mặc định) — tự thích ứng theo kho thật, không cần nhớ bấm 일일 오픈 mỗi ngày. Chỉ dùng <span class="col-ui">고정</span> khi muốn ép đúng 1 hạn mức cứng mỗi khung giờ, bất kể khung trước thừa/thiếu.
+      </td></tr>
+      <tr><td class="col-ui">페이싱 대상 등급</td><td>Danh sách hạng áp dụng pacing, cách nhau bằng dấu phẩy (ví dụ <code>t1,t2,t3</code>). Chỉ nhận hạng trúng thưởng (t1–t5), không được chứa giá trị trượt.</td></tr>
+      <tr><td class="col-ui">조준(초)</td><td>Thời gian khách được ngắm trước khi thả (8–20 giây) — chỉ là timing hiển thị, không liên quan tỉ lệ trúng.</td></tr>
+      <tr><td class="col-ui">당첨 노출(초)</td><td>Thời gian hiển thị màn hình kết quả khi <b>trúng</b> (5–20 giây).</td></tr>
+      <tr><td class="col-ui">꽝 노출(초)</td><td>Thời gian hiển thị màn hình kết quả khi <b>trượt</b> (3–20 giây).</td></tr>
+      <tr><td class="col-ui">결과 공개 연출</td><td><span class="col-ui">B안 — 캡슐 개봉</span> hoặc <span class="col-ui">A안 — 획득/미획득</span> — 2 kiểu hiệu ứng khác nhau khi hiển thị kết quả (A/B test), không ảnh hưởng tỉ lệ.</td></tr>
+      <tr><td class="col-ui">변경 사유 (필수)</td><td>Lý do thay đổi — <b>bắt buộc phải nhập</b>, để trống sẽ không 게시 được. Lưu vào lịch sử để tra cứu sau.</td></tr>
+    </table>
+
+    <h3>Nút <span class="btn-ui">검증</span> (Validate)</h3>
+    <p>Kiểm tra khô — gửi lên server để kiểm tra lỗi (tổng %, giới hạn pacing, giới hạn game config...) nhưng <b>không lưu gì cả</b>, không ảnh hưởng hệ thống đang chạy. Kết quả hiện ngay dưới dạng chữ nhỏ:</p>
+    <ul>
+      <li>Nếu hợp lệ: hiện dòng "예상 1,000회: …" — mô phỏng nếu có 1.000 lượt chơi thì mỗi hạng sẽ ra bao nhiêu lượt, giúp hình dung tỉ lệ thực tế trước khi chốt.</li>
+      <li>Nếu có lỗi: hiện danh sách lỗi cụ thể (ví dụ sai tổng %, sai khoảng giá trị cho phép…).</li>
+    </ul>
+
+    <h3>Nút <span class="btn-ui">게시</span> (Publish)</h3>
+    <p>Áp dụng thật ngay lập tức. Có hỏi xác nhận trước khi thực hiện. Sau khi bấm:</p>
+    <ul>
+      <li>Validate lại 1 lần nữa ở server — nếu sai vẫn không lưu gì.</li>
+      <li>Nếu hợp lệ: tạo 1 phiên bản cấu hình mới, đánh dấu active, mọi phiên bản cũ chuyển về không-active.</li>
+      <li><b>Có hiệu lực ngay cho lượt chơi mới</b> — không cần restart server. Những lượt khách đang chơi dở (đã tạo session trước khi bấm 게시) vẫn giữ tỉ lệ cũ, không bị đổi giữa chừng.</li>
+      <li class="jump-red">Nhớ: tỉ lệ mới này chỉ tồn tại tới hết ngày hôm đó — xem khung cảnh báo "<a href="#daily-reset-info">cơ chế tự động reset</a>" ở trên.</li>
+    </ul>
+
+    <h3>Bảng <span class="col-ui">설정 버전 이력</span></h3>
+    <p>Lịch sử toàn bộ các lần 게시 (kể cả lần hệ thống <b>tự reset lúc 0h</b> — dòng đó sẽ hiện người 게시자 là <code>system</code>).</p>
+    <table>
+      <tr><th>Cột</th><th>Ý nghĩa</th></tr>
+      <tr><td class="col-ui">버전</td><td>Số phiên bản (<code>rule_version</code>), tăng dần theo thời gian.</td></tr>
+      <tr><td class="col-ui">게시 시각</td><td>Thời điểm phiên bản đó được publish.</td></tr>
+      <tr><td class="col-ui">게시자</td><td>Ai publish — tên admin đã nhập, hoặc <code>system</code> nếu do cơ chế tự reset 0h thực hiện.</td></tr>
+      <tr><td class="col-ui">사유</td><td>Lý do đã nhập lúc publish.</td></tr>
+      <tr><td class="col-ui">확률</td><td>Tóm tắt % từng hạng của phiên bản đó.</td></tr>
+      <tr><td>(cột cuối, không tên)</td><td>Hiện chữ <span class="col-ui">활성</span> màu xanh nếu đây là phiên bản đang dùng hiện tại.</td></tr>
+    </table>
+  </section>
+
+  <!-- TAB 5 -->
+  <section id="tab5">
+    <h2><span class="tabno">Tab 5</span> 세션 로그 <span class="korean">(Log phiên chơi)</span></h2>
+    <p>Xem lại chi tiết từng lượt chơi — dùng để tra cứu, đối soát, xuất báo cáo.</p>
+
+    <h3>Thanh công cụ</h3>
+    <ul>
+      <li>Dropdown <span class="col-ui">전체 상태</span> — lọc theo trạng thái: <code>DRAWN</code>, <code>PLAYED</code>, <code>PENDING_CLAIM</code>, <code>CLAIMED</code>, <code>VOIDED</code>, <code>EXPIRED</code>, <code>ABORTED</code>.</li>
+      <li>Checkbox <span class="col-ui">테스트 세션 포함</span> — có hiện cả những lượt chơi thử (test, không tính vào số liệu kinh doanh) hay không.</li>
+      <li>Nút <span class="btn-ui">조회</span> — tải lại danh sách theo bộ lọc đã chọn.</li>
+      <li>Nút <span class="btn-ui">CSV 내보내기</span> — xuất toàn bộ log phiên chơi ra file <code>.csv</code>.</li>
+      <li>Nút <span class="btn-ui">Excel 내보내기</span> — xuất ra file <code>.xlsx</code> (định dạng Excel đầy đủ hơn CSV).</li>
+    </ul>
+
+    <h3>Bảng <span class="col-ui">세션 로그</span></h3>
+    <table>
+      <tr><th>Cột</th><th>Ý nghĩa</th></tr>
+      <tr><td class="col-ui">생성</td><td>Thời điểm phiên chơi được tạo.</td></tr>
+      <tr><td class="col-ui">상태</td><td>Trạng thái hiện tại của phiên; nếu có hạng bị chặn khi quay, hiện thêm dòng nhỏ <span class="col-ui">차단 …</span> ghi rõ hạng nào bị chặn và vì lý do gì.</td></tr>
+      <tr><td class="col-ui">등급</td><td>Hạng kết quả (hoặc "-" nếu chưa quay).</td></tr>
+      <tr><td class="col-ui">코드</td><td>Mã nhận quà (nếu trúng).</td></tr>
+      <tr><td class="col-ui">조준</td><td>Thời gian khách ngắm trước khi thả (giây).</td></tr>
+      <tr><td class="col-ui">자동</td><td>"Y" nếu hệ thống tự thả giúp khách (khách không bấm kịp trong thời gian cho phép).</td></tr>
+      <tr><td class="col-ui">최소fps</td><td>FPS thấp nhất ghi nhận được trong lượt chơi đó.</td></tr>
+      <tr><td class="col-ui">규칙</td><td>Phiên bản tỉ lệ (<code>rule_version</code>) áp dụng cho lượt chơi này — đối chiếu với Tab ④ để biết lượt đó chơi theo tỉ lệ nào.</td></tr>
+      <tr><td class="col-ui">테스트</td><td>Hiện "TEST" nếu là lượt chơi thử.</td></tr>
+      <tr><td class="col-ui">지급/사유</td><td>Nếu đã phát quà: thời điểm phát + người phát. Nếu bị huỷ: lý do huỷ.</td></tr>
+    </table>
+  </section>
+
+  <!-- TAB 6 -->
+  <section id="tab6">
+    <h2><span class="tabno">Tab 6</span> 감사 로그 <span class="korean">(Log kiểm toán)</span></h2>
+    <p>Ghi lại <b>mọi thao tác quản trị quan trọng</b> đã thực hiện trên hệ thống — dùng để tra lại "ai đã làm gì, lúc nào, vì sao" khi cần đối soát hoặc điều tra sự cố. Bao gồm cả các lần publish tỉ lệ, chỉnh kho giải, bật/tắt giải, huỷ phiên, và cả thao tác <b>tự động của hệ thống</b> (ví dụ reset tỉ lệ lúc 0h — hiện với 처리자 là <code>system</code>).</p>
+    <table>
+      <tr><th>Cột</th><th>Ý nghĩa</th></tr>
+      <tr><td class="col-ui">시각</td><td>Thời điểm xảy ra thao tác.</td></tr>
+      <tr><td class="col-ui">처리자</td><td>Người (hoặc hệ thống) thực hiện — ví dụ <code>admin</code>, <code>manager</code>, hoặc <code>system</code>.</td></tr>
+      <tr><td class="col-ui">액션</td><td>Loại thao tác, ví dụ: <code>rules.publish</code> (chỉnh tỉ lệ), <code>rules.dailyReset</code> (tự reset 0h), <code>prize.adjust</code> (chỉnh kho ±수량), <code>prize.update</code> (đổi tên/hạn mức/bật-tắt giải), <code>prize.dayStart</code> (bấm 일일 오픈), <code>void</code> (huỷ phiên), <code>event.update</code> (đổi cấu hình sự kiện).</td></tr>
+      <tr><td class="col-ui">대상</td><td>Đối tượng bị tác động (ví dụ hạng giải, hoặc ID phiên chơi).</td></tr>
+      <tr><td class="col-ui">사유</td><td>Lý do đã nhập khi thực hiện thao tác đó (nếu bắt buộc nhập lý do).</td></tr>
+    </table>
+    <p>Tab này chỉ để <b>xem</b>, không có nút chỉnh sửa — đúng đúng tính chất của log kiểm toán (không được sửa lại lịch sử).</p>
+  </section>
+
+  <a class="top-link" href="#toc">↑ Về đầu trang</a>
+
+  </main>
+</div>
+
+<script>
+  function syncHeaderHeight(){
+    var h = document.querySelector('header').offsetHeight;
+    document.documentElement.style.setProperty('--header-h', h + 'px');
+  }
+  syncHeaderHeight();
+  window.addEventListener('resize', syncHeaderHeight);
+</script>
+</body>
+</html>

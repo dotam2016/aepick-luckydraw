@@ -17,8 +17,10 @@ created_env=0
 if [[ ! -f .env ]]; then
   if command -v openssl >/dev/null 2>&1; then
     admin_key="$(openssl rand -hex 32)"
+    dashboard_key="$(openssl rand -hex 32)"
   else
     admin_key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+    dashboard_key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
   fi
 
   random_number="$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')"
@@ -29,11 +31,24 @@ LUCKYDRAW_PORT=8788
 BIND_ADDRESS=0.0.0.0
 ADMIN_KEY=${admin_key}
 OPERATOR_PIN=${operator_pin}
+DASHBOARD_KEY=${dashboard_key}
 LOG_LEVEL=info
 EOF
   chmod 600 .env
   created_env=1
   echo "Đã tạo .env với secret ngẫu nhiên (permission 600)."
+elif ! grep -q '^DASHBOARD_KEY=' .env; then
+  # .env đã tồn tại từ lần deploy trước (chưa có DASHBOARD_KEY) — compose.yaml giờ bắt buộc
+  # biến này, nên tự bổ sung thêm một dòng mới chứ không tạo lại toàn bộ .env.
+  if command -v openssl >/dev/null 2>&1; then
+    dashboard_key="$(openssl rand -hex 32)"
+  else
+    dashboard_key="$(od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+  fi
+  echo "DASHBOARD_KEY=${dashboard_key}" >> .env
+  echo "Đã bổ sung DASHBOARD_KEY ngẫu nhiên vào .env hiện có."
+  echo "DASHBOARD_KEY=${dashboard_key}"
+  echo "Hãy lưu giá trị này ở nơi an toàn."
 fi
 
 echo "Kiểm tra cấu hình..."
@@ -69,11 +84,13 @@ echo
 echo "Deploy thành công."
 echo "Kiosk : http://EC2_PUBLIC_IP:8788/kiosk/"
 echo "Admin : http://EC2_PUBLIC_IP:8788/admin"
+echo "경품 · 확률 설정 : http://EC2_PUBLIC_IP:8788/admin/dashboard"
 echo "Survey hiện tại vẫn dùng cổng 8787."
 
 if [[ "$created_env" -eq 1 ]]; then
   echo
   echo "OPERATOR_PIN=${operator_pin}"
   echo "ADMIN_KEY=${admin_key}"
-  echo "Hãy lưu hai giá trị này ở nơi an toàn."
+  echo "DASHBOARD_KEY=${dashboard_key}"
+  echo "Hãy lưu ba giá trị này ở nơi an toàn."
 fi
