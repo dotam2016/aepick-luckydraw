@@ -345,6 +345,8 @@ export function getPrizeByTier(tier: WinTier): (Prize & { dayStartQty: number })
 }
 
 export function getEventConfig(): EventConfig {
+  // 스케줄러가 실패했어도 모든 호출자가 항상 오늘 기준 창을 보도록 읽기 직전에 굴린다.
+  rollEventWindow(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }));
   const row = db.prepare('SELECT * FROM event_config WHERE id = 1').get() as {
     event_on: number;
     emergency_stop: number;
@@ -437,6 +439,20 @@ export function getProbResetDate(): string | null {
     prob_reset_date: string | null;
   };
   return row.prob_reset_date;
+}
+
+/**
+ * 행사 시간대(open_at/close_at)를 오늘(VN) 10:00–22:00으로 맞춘다. 매일 반복되는 행사이므로
+ * 날짜가 바뀌면 자동으로 굴려야 claim 만료·페이싱 버킷·일일 상한(open_at 기준)이 오늘 기준으로 동작한다.
+ * 이미 오늘 값이면 아무것도 하지 않고 false를 반환한다.
+ */
+export function rollEventWindow(todayStr: string): boolean {
+  const openAt = new Date(`${todayStr}T10:00:00+07:00`).toISOString();
+  const closeAt = new Date(`${todayStr}T22:00:00+07:00`).toISOString();
+  const r = db
+    .prepare('UPDATE event_config SET open_at = ?, close_at = ? WHERE id = 1 AND open_at != ?')
+    .run(openAt, closeAt, openAt);
+  return r.changes > 0;
 }
 
 export function setProbResetDate(todayStr: string): void {

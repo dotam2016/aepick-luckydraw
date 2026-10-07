@@ -14,6 +14,7 @@ import {
   logAudit,
   publishRuleVersion,
   resetDailyPrizeStock,
+  rollEventWindow,
   seedIfEmpty,
   setProbResetDate,
 } from './db.js';
@@ -122,6 +123,13 @@ function runDailyResets(): void {
     maybeDailyPrizeReset();
   } catch (err) {
     app.log.error({ err }, 'daily prize reset failed');
+  }
+  try {
+    if (rollEventWindow(vnDateStr(new Date().toISOString()))) {
+      app.log.info('event window rolled to today');
+    }
+  } catch (err) {
+    app.log.error({ err }, 'event window roll failed');
   }
 }
 
