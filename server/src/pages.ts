@@ -91,7 +91,6 @@ const PAGE = HTML`<!doctype html>
   <button data-tab="dash">운영 대시보드</button>
   <button data-tab="sessions">세션 로그</button>
   <button data-tab="audit">감사 로그</button>
-  <button id="toDash" style="margin-left:auto">경품 · 재고 / 확률 설정 →</button>
 </nav>
 
 <main>
@@ -194,8 +193,6 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==='sessions') loadSessions();
   if(b.dataset.tab==='audit') loadAudit();
 });
-document.getElementById('toDash').onclick = () =>
-  location.href = location.pathname.replace(/\/admin\/?$/, '/admin/dashboard');
 
 function tierSpan(t){ return '<span class="tier '+t+'">'+(TIER_KO[t]||t)+'</span>'; }
 function ageCls(m){ return m>=30?'age-bad':(m>=10?'age-warn':''); }
