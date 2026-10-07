@@ -18,7 +18,6 @@ services:
       LOG_LEVEL: "${LOG_LEVEL:-info}"
       ADMIN_KEY: "${ADMIN_KEY:?Set ADMIN_KEY in .env}"
       OPERATOR_PIN: "${OPERATOR_PIN:?Set OPERATOR_PIN in .env}"
-      DASHBOARD_KEY: "${DASHBOARD_KEY:?Set DASHBOARD_KEY in .env}"
     volumes:
       - luckydraw-data:/app/server/data
     healthcheck:

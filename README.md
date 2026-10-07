@@ -33,7 +33,7 @@ npm run dev:kiosk    # http://localhost:5174 (키오스크, /api는 8788로 프�
 ```
 
 - 어드민: http://localhost:8788/admin — 기본 키 `aepick-admin` (`ADMIN_KEY`), 운영자 PIN `1234` (`OPERATOR_PIN`)
-- 어드민 · 경품/확률 설정: http://localhost:8788/admin/dashboard — 별도 비밀번호, 기본값 `aepick-dashboard` (`DASHBOARD_KEY`)
+- 어드민 · 경품/확률 설정: http://localhost:8788/admin/dashboard — 별도 비밀번호(코드에 bcrypt 해시로 고정, `server/src/routes.ts`의 `DASHBOARD_PASSWORD_HASH`)
 - 단위 테스트: `npm test` (추첨 분포 10만 회 · 페이싱 · 설정 검증 · 코드 생성 — 39 항목)
 - API E2E: 서버를 띄운 뒤 `npm run e2e` (64 항목)
 - 추첨 시뮬레이터: `npm run sim`
@@ -137,7 +137,6 @@ npm run sim -- --renormalize                   # 소진분 비례 재정규화 �
 | `PORT` | 8788 | API 포트 |
 | `ADMIN_KEY` | aepick-admin | 어드민 인증 키 (`/admin` — 지급 큐/대시보드/세션/감사) |
 | `OPERATOR_PIN` | 1234 | 운영자 PIN |
-| `DASHBOARD_KEY` | aepick-dashboard | `/admin/dashboard`(경품 · 재고 / 확률 설정) 전용 비밀번호 |
 | `DB_PATH` | `server/data/luckydraw.sqlite` | SQLite 파일 경로 |
 
 ## Node 요구사항

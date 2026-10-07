@@ -10,6 +10,8 @@
 const BASE = process.env.BASE ?? 'http://localhost:8788';
 const PIN = process.env.OPERATOR_PIN ?? '1234';
 const ADMIN = process.env.ADMIN_KEY ?? 'aepick-admin';
+// 서버는 고정 bcrypt 해시(server/src/routes.ts)로 검사하므로 여기 평문을 커밋하지 않는다 —
+// 경품/확률 관련 검증을 통과시키려면 실행 전에 직접 DASHBOARD_KEY=실제비번 환경변수로 export한다.
 const DASHBOARD = process.env.DASHBOARD_KEY ?? 'aepick-dashboard';
 
 let pass = 0;

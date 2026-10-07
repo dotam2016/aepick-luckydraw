@@ -38,7 +38,7 @@ npm run dev:kiosk    # http://localhost:5174 (Kiosk, /api proxy tới 8788)
 ```
 
 * **Admin:** `http://localhost:8788/admin` — Key mặc định `aepick-admin` (`ADMIN_KEY`), PIN operator `1234` (`OPERATOR_PIN`)
-* **Admin · Giải thưởng / Tỉ lệ:** `http://localhost:8788/admin/dashboard` — mật khẩu riêng, mặc định `aepick-dashboard` (`DASHBOARD_KEY`)
+* **Admin · Giải thưởng / Tỉ lệ:** `http://localhost:8788/admin/dashboard` — mật khẩu riêng, cố định trong code (bcrypt hash `DASHBOARD_PASSWORD_HASH` ở `server/src/routes.ts`)
 * **Unit Test:** `npm test` (100.000 lượt kiểm tra phân phối bốc thăm · pacing · validation cấu hình · tạo code — 39 hạng mục)
 * **API E2E:** Sau khi khởi động server, chạy `npm run e2e` (64 hạng mục)
 * **Trình mô phỏng bốc thăm:** `npm run sim`
@@ -211,8 +211,9 @@ Session được tạo với `isTest: true` sẽ:
 | `PORT`         | 8788                           | API port                 |
 | `ADMIN_KEY`    | aepick-admin                   | Admin authentication key (trang `/admin` — tiếp giải/dashboard/log) |
 | `OPERATOR_PIN` | 1234                           | PIN của operator         |
-| `DASHBOARD_KEY`| aepick-dashboard               | Mật khẩu riêng cho trang `/admin/dashboard` (giải thưởng · kho / cấu hình tỉ lệ) |
 | `DB_PATH`      | `server/data/luckydraw.sqlite` | Đường dẫn file SQLite    |
+
+Mật khẩu `/admin/dashboard` (giải thưởng · kho / cấu hình tỉ lệ) **không** dùng biến môi trường — cố định trong code dưới dạng bcrypt hash (`DASHBOARD_PASSWORD_HASH` ở `server/src/routes.ts`). Muốn đổi: tạo hash mới (`bcrypt.hashSync('mật khẩu mới', 10)`) rồi thay vào const đó.
 
 ---
 

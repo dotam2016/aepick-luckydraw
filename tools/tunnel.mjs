@@ -49,7 +49,8 @@ if (CF === 'cloudflared') {
 /* 공개되는 순간 기본값은 쓰면 안 된다 */
 const PIN = arg('pin', String(randomInt(1000, 10000)));
 const ADMIN_KEY = arg('admin-key', randomBytes(12).toString('base64url'));
-const DASHBOARD_KEY = arg('dashboard-key', randomBytes(12).toString('base64url'));
+// /admin/dashboard 비밀번호는 더 이상 env가 아니라 코드에 고정된 bcrypt 해시로 검사한다
+// (server/src/routes.ts) — 여기서 생성해도 반영되지 않으므로 랜덤 생성을 제거했다.
 
 const children = [];
 const stopAll = () => {
@@ -94,7 +95,7 @@ try {
 console.log(`서버 기동 중 (포트 ${PORT})…`);
 /* shell:true에 인자 배열을 함께 넘기면 Node가 DEP0190을 낸다 — 명령을 한 문자열로 넘긴다 */
 const server = spawn('npm start', {
-  env: { ...process.env, PORT: String(PORT), OPERATOR_PIN: PIN, ADMIN_KEY, DASHBOARD_KEY },
+  env: { ...process.env, PORT: String(PORT), OPERATOR_PIN: PIN, ADMIN_KEY },
   shell: true,
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -150,13 +151,13 @@ const onLine = (line) => {
 
   운영자 PIN       ${PIN}
   어드민 키        ${ADMIN_KEY}
-  경품·확률 설정 키  ${DASHBOARD_KEY}
+  경품·확률 설정 키  (고정 비밀번호 — server/src/routes.ts 참고, 매번 바뀌지 않습니다)
 
   ⚠ 이 주소를 아는 사람은 누구나 접속할 수 있습니다.
     - 실제 플레이는 경품 재고를 차감합니다.
       재고를 지키려면 운영자 패널에서 [테스트 세션]만 쓰세요.
-    - 어드민 키 / 경품·확률 설정 키는 확률·재고를 바꿀 수 있습니다. 공유에 주의하세요.
-    - 위 값은 실행할 때마다 새로 생성됩니다.
+    - 어드민 키 / 경품·확률 설정 비밀번호는 확률·재고를 바꿀 수 있습니다. 공유에 주의하세요.
+    - 운영자 PIN / 어드민 키는 실행할 때마다 새로 생성됩니다 (경품·확률 설정 비밀번호는 고정값).
 
   Ctrl+C 로 서버와 터널을 함께 종료합니다.
 ============================================================

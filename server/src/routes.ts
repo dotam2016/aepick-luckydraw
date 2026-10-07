@@ -2,6 +2,7 @@
  * 게임 API — 기획서 v1.1 §10.2
  */
 
+import bcrypt from 'bcryptjs';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import {
   DEFAULT_LOCALE,
@@ -26,8 +27,14 @@ import {
 
 export const OPERATOR_PIN = process.env.OPERATOR_PIN ?? '1234';
 export const ADMIN_KEY = process.env.ADMIN_KEY ?? 'aepick-admin';
-// 경품 · 재고 / 확률 설정 페이지(/admin/dashboard) 전용 — ADMIN_KEY와 별개의 비밀번호.
-export const DASHBOARD_KEY = process.env.DASHBOARD_KEY ?? 'aepick-dashboard';
+
+/**
+ * 경품 · 재고 / 확률 설정 페이지(/admin/dashboard) 전용 — ADMIN_KEY와 별개의 비밀번호.
+ * 단기 행사 종료 후 폐기할 프로젝트라 환경변수 대신 코드에 bcrypt 해시로 고정한다
+ * (평문이 아니라 해시만 커밋되므로 저장소를 들여다봐도 원문 비밀번호는 알 수 없다).
+ * 비밀번호를 바꾸려면 새 해시를 생성해서 교체: bcrypt.hashSync('새 비밀번호', 10)
+ */
+const DASHBOARD_PASSWORD_HASH = '$2b$10$7lshMGto28pLsLAywcvLV.K2K1GvHQrNxRge953Sp/oyGyPqh0Kgm';
 
 export function requireOperator(req: FastifyRequest, reply: FastifyReply): boolean {
   const pin = req.headers['x-operator-pin'];
@@ -44,7 +51,8 @@ export function requireAdmin(req: FastifyRequest, reply: FastifyReply): boolean 
 }
 
 export function requireDashboard(req: FastifyRequest, reply: FastifyReply): boolean {
-  if (req.headers['x-dashboard-key'] === DASHBOARD_KEY) return true;
+  const key = req.headers['x-dashboard-key'];
+  if (typeof key === 'string' && bcrypt.compareSync(key, DASHBOARD_PASSWORD_HASH)) return true;
   reply.code(401).send({ error: 'UNAUTHORIZED', message: '경품 · 확률 설정 인증이 필요합니다.' });
   return false;
 }
