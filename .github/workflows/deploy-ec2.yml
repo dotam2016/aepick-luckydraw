@@ -27,7 +27,9 @@ jobs:
 
           git fetch origin "$DEPLOY_REF"
           git cat-file -e "$DEPLOY_SHA^{commit}"
-          git switch --detach "$DEPLOY_SHA"
+          # 러너 작업 트리에 수동으로 생긴 로컬 변경(예: chmod +x deploy-ec2.sh)이 있어도
+          # 항상 타겟 커밋 그대로 배포되도록 강제로 덮어쓴다 — 배포는 재현 가능해야 한다.
+          git switch --discard-changes --detach "$DEPLOY_SHA"
 
           echo "Deploying ref: $DEPLOY_REF"
           echo "Deploying commit: $DEPLOY_SHA"
