@@ -187,12 +187,16 @@ if (!eventCols.some((c) => c.name === 'prob_reset_date')) {
   db.exec('ALTER TABLE event_config ADD COLUMN prob_reset_date TEXT');
 }
 
+// 1~3등은 일일 수량(DAILY_RESET_PRIZE_QTY)이 곧 하루 상한이라 별도 일일상한을 두지 않는다.
+// 어드민 화면에 일일상한 입력란이 없으므로, 예전 시드(1/3/8)가 남은 DB도 기동 시 해제한다.
+db.exec("UPDATE prizes SET daily_cap = NULL WHERE tier IN ('t1','t2','t3') AND daily_cap IS NOT NULL");
+
 /* ---------------- 시드 ---------------- */
 
 const PRIZE_SEED: { tier: WinTier; name: LocalizedText; qty: number; dailyCap: number | null }[] = [
-  { tier: 't1', name: { vi: 'Quà Giải Nhất', en: '1st Prize', ko: '1등 경품' }, qty: 3, dailyCap: 1 },
-  { tier: 't2', name: { vi: 'Quà Giải Nhì', en: '2nd Prize', ko: '2등 경품' }, qty: 10, dailyCap: 3 },
-  { tier: 't3', name: { vi: 'Quà Giải Ba', en: '3rd Prize', ko: '3등 경품' }, qty: 30, dailyCap: 8 },
+  { tier: 't1', name: { vi: 'Quà Giải Nhất', en: '1st Prize', ko: '1등 경품' }, qty: 3, dailyCap: null },
+  { tier: 't2', name: { vi: 'Quà Giải Nhì', en: '2nd Prize', ko: '2등 경품' }, qty: 10, dailyCap: null },
+  { tier: 't3', name: { vi: 'Quà Giải Ba', en: '3rd Prize', ko: '3등 경품' }, qty: 30, dailyCap: null },
   { tier: 't4', name: { vi: 'Quà Giải Tư', en: '4th Prize', ko: '4등 경품' }, qty: 120, dailyCap: null },
   { tier: 't5', name: { vi: 'Quà Giải Năm', en: '5th Prize', ko: '5등 경품' }, qty: 300, dailyCap: null },
 ];
