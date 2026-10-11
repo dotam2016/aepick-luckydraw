@@ -404,6 +404,7 @@ const PAGE_DASHBOARD = HTML`<!doctype html>
   <button id="toAdmin">← 지급 큐 / 대시보드</button>
   <button class="active" data-tab="prizes">경품 · 재고</button>
   <button data-tab="rules">확률 설정</button>
+  <button data-tab="stats">일별 통계</button>
 </nav>
 
 <main>
@@ -471,6 +472,22 @@ const PAGE_DASHBOARD = HTML`<!doctype html>
       <table><thead><tr><th>버전</th><th>게시 시각</th><th>게시자</th><th>사유</th><th>확률</th><th></th></tr></thead>
       <tbody id="ruleBody"></tbody></table>
     </div>
+  </section>
+
+  <!-- 일별 통계 -->
+  <section id="stats">
+    <div class="row">
+      <div style="width:180px"><label class="lbl">날짜 (Asia/Ho_Chi_Minh)</label>
+        <select id="statDate"></select></div>
+      <button class="act" style="align-self:end" onclick="loadStats()">Search</button>
+    </div>
+    <div class="wrap">
+      <h2 id="statTitle">일별 통계</h2>
+      <table><thead><tr>
+        <th>등급</th><th>기준 수량</th><th>당첨(추첨)</th><th>└ 수령 완료</th><th>└ 미수령(대기)</th><th>└ 만료</th><th>잔여 재고</th><th>지급(수령 처리)</th>
+      </tr></thead><tbody id="statBody"></tbody></table>
+    </div>
+    <div class="dev">당첨 = 해당 날짜에 추첨된 건(무효·중단·테스트 제외). 지급 = 해당 날짜에 수령 처리된 건(추첨일과 무관).<br>기준 수량·잔여 재고: 오늘은 실제 재고 값, 과거 날짜는 (일일 기본 수량 1등 150 · 2등 300 · 3등 525 + 그날 수동 조정분) − 당첨 수로 계산한 추정값입니다(일별 스냅샷을 저장하지 않음). 4·5등은 일일 리셋 대상이 아니라 오늘만 표시됩니다.</div>
   </section>
 </main>
 
@@ -634,9 +651,28 @@ async function publishRules(){
   }catch(e){ show(e.message,false); }
 }
 
+/* ---------- 일별 통계 ---------- */
+async function loadStats(){
+  const sel = document.getElementById('statDate');
+  try{
+    const d = await api('/api/admin/stats/daily' + (sel.value ? '?date='+encodeURIComponent(sel.value) : ''));
+    if(sel.options.length !== d.dates.length){
+      sel.innerHTML = d.dates.map(x=>'<option value="'+x+'">'+x+(x===d.today?' (오늘)':'')+'</option>').join('');
+    }
+    sel.value = d.date;
+    document.getElementById('statTitle').textContent = '일별 통계 — ' + d.date;
+    const n = v => v==null ? '-' : v;
+    const est = d.estimated ? ' <span class="dev">(추정)</span>' : '';
+    const row = (label, r) => '<td>'+label+'</td><td>'+n(r.initialQty)+(r.adjustedQty?' <span class="dev">(조정 '+(r.adjustedQty>0?'+':'')+r.adjustedQty+')</span>':'')+'</td><td><b>'+r.won+'</b></td><td>'+r.wonClaimed+'</td><td>'+r.wonPending+'</td><td>'+r.wonExpired+'</td><td><b>'+n(r.remainingQty)+'</b>'+(r.remainingQty==null?'':est)+'</td><td><b>'+r.givenOnDay+'</b></td>';
+    document.getElementById('statBody').innerHTML =
+      d.items.map(i=>'<tr>'+row(tierSpan(i.tier), i)+'</tr>').join('')
+      + '<tr style="font-weight:700">'+row('합계', d.total)+'</tr>';
+  }catch(e){ show(e.message,false); }
+}
+
 async function load(){
   if(!KEY){ show('경품 · 확률 설정 비밀번호를 입력하세요.', false); return; }
-  try{ await loadPrizes(); await loadRules(); }
+  try{ await loadPrizes(); await loadRules(); await loadStats(); }
   catch(e){ show(e.message, false); }
 }
 load();

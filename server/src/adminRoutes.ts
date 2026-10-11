@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import ExcelJS from 'exceljs';
 import {
   ALL_TIERS,
+  DAILY_RESET_PRIZE_QTY,
   WIN_TIERS,
   mergeValidation,
   validateGameConfig,
@@ -196,6 +197,126 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
         eventCap: p.eventCap,
         active: p.active,
       })),
+    });
+  });
+
+  /* ---------- 일별 지급 통계 (당첨 vs 지급) — DB 스키마 변경 없이 기존 테이블만 조회 ---------- */
+
+  const VN_OFFSET = '+07:00';
+  const vnDate = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+
+  app.get('/api/admin/stats/daily', async (req, reply) => {
+    if (!requireDashboard(req, reply)) return;
+    const q = req.query as { date?: string };
+    const date = q.date ?? vnDate(new Date());
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) {
+      return reply.code(400).send({ error: 'BAD_DATE', message: 'date must be YYYY-MM-DD' });
+    }
+    // 베트남 시간(UTC+7) 기준 하루 경계 → UTC ISO 문자열
+    const start = new Date(`${date}T00:00:00${VN_OFFSET}`);
+    const end = new Date(start.getTime() + 24 * 3600_000);
+    const s = start.toISOString();
+    const e = end.toISOString();
+
+    // 당첨: 해당 날짜에 추첨된 건 (무효/중단 제외, 테스트 제외)
+    const won = db
+      .prepare(
+        `SELECT d.result_tier AS tier, s.status AS status, COUNT(*) AS c
+         FROM draws d JOIN sessions s USING(session_id)
+         WHERE d.is_test = 0 AND d.created_at >= ? AND d.created_at < ?
+           AND s.status NOT IN ('VOIDED','ABORTED')
+         GROUP BY d.result_tier, s.status`,
+      )
+      .all(s, e) as { tier: ResultTier; status: string; c: number }[];
+
+    // 지급: 해당 날짜에 실제로 수령 처리된 건 (추첨일과 무관)
+    const given = db
+      .prepare(
+        `SELECT d.result_tier AS tier, COUNT(*) AS c
+         FROM claims c JOIN draws d USING(session_id)
+         WHERE d.is_test = 0 AND c.claimed_at >= ? AND c.claimed_at < ?
+         GROUP BY d.result_tier`,
+      )
+      .all(s, e) as { tier: ResultTier; c: number }[];
+
+    // 기준 수량·잔여: 오늘은 prizes 테이블의 실제 값(day_start_qty / remaining_qty).
+    // 과거 날짜는 일별 스냅샷이 없으므로(DB 변경 없이) 일일 기본 수량 − 당첨 수로 추정한다.
+    const isToday = date === vnDate(new Date());
+    const prizeRows = listPrizes();
+
+    // 수동 재고 조정(±)은 audit_log의 prize.adjust에 before/after로 남는다 — 과거 날짜 추정에 가산한다.
+    const adjusts = db
+      .prepare(
+        `SELECT target, before, after FROM audit_log
+         WHERE action = 'prize.adjust' AND at >= ? AND at < ?`,
+      )
+      .all(s, e) as { target: string | null; before: string | null; after: string | null }[];
+    const adjustedByTier: Record<string, number> = {};
+    for (const a of adjusts) {
+      try {
+        const delta =
+          (JSON.parse(a.after ?? '{}').remainingQty ?? 0) - (JSON.parse(a.before ?? '{}').remainingQty ?? 0);
+        if (a.target) adjustedByTier[a.target] = (adjustedByTier[a.target] ?? 0) + delta;
+      } catch {
+        /* 파싱 불가한 로그는 무시 */
+      }
+    }
+
+    const items = WIN_TIERS.map((tier) => {
+      const rows = won.filter((r) => r.tier === tier);
+      const sum = (pred: (st: string) => boolean) =>
+        rows.filter((r) => pred(r.status)).reduce((a, r) => a + r.c, 0);
+      const wonTotal = rows.reduce((a, r) => a + r.c, 0);
+      const prize = prizeRows.find((p) => p.tier === tier);
+      const adjustedQty = adjustedByTier[tier] ?? 0;
+      const baseQty = DAILY_RESET_PRIZE_QTY[tier];
+      const initialQty = isToday
+        ? (prize?.dayStartQty ?? null)
+        : baseQty === undefined ? null : baseQty + adjustedQty;
+      const remainingQty = isToday
+        ? (prize?.remainingQty ?? null)
+        : initialQty === null ? null : Math.max(initialQty - wonTotal, 0);
+      return {
+        tier,
+        initialQty,
+        adjustedQty,
+        remainingQty,
+        won: wonTotal,
+        wonClaimed: sum((st) => st === 'CLAIMED'),
+        wonPending: sum((st) => st === 'PENDING_CLAIM'),
+        wonExpired: sum((st) => st === 'EXPIRED'),
+        givenOnDay: given.find((g) => g.tier === tier)?.c ?? 0,
+      };
+    });
+
+    // event_config.open_at/close_at는 매일 오늘로 굴러가므로 날짜 목록은 첫 추첨일 ~ 오늘로 만든다.
+    const dates: string[] = [];
+    const minRow = db.prepare('SELECT MIN(created_at) AS m FROM draws WHERE is_test = 0').get() as { m: string | null };
+    const first = new Date(`${vnDate(minRow.m ? new Date(minRow.m) : new Date())}T00:00:00Z`);
+    const last = new Date(`${vnDate(new Date())}T00:00:00Z`);
+    for (let t = first.getTime(); t <= last.getTime() && dates.length < 366; t += 24 * 3600_000) {
+      dates.push(new Date(t).toISOString().slice(0, 10));
+    }
+    if (!dates.includes(date)) dates.push(date);
+
+    const sumNullable = (k: 'initialQty' | 'remainingQty') =>
+      items.some((i) => i[k] !== null) ? items.reduce((a, i) => a + (i[k] ?? 0), 0) : null;
+
+    return reply.send({
+      date,
+      today: vnDate(new Date()),
+      estimated: !isToday,
+      dates: dates.sort(),
+      items,
+      total: {
+        initialQty: sumNullable('initialQty'),
+        remainingQty: sumNullable('remainingQty'),
+        won: items.reduce((a, i) => a + i.won, 0),
+        wonClaimed: items.reduce((a, i) => a + i.wonClaimed, 0),
+        wonPending: items.reduce((a, i) => a + i.wonPending, 0),
+        wonExpired: items.reduce((a, i) => a + i.wonExpired, 0),
+        givenOnDay: items.reduce((a, i) => a + i.givenOnDay, 0),
+      },
     });
   });
 
