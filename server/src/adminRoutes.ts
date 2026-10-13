@@ -17,7 +17,7 @@ import {
   type ResultTier,
   type TierProbability,
 } from '@aepick/shared';
-import { db, getActiveRule, getEventConfig, listPrizes, logAudit, publishRuleVersion } from './db.js';
+import { db, getActiveRule, getEventConfig, listPrizes, logAudit, publishRuleVersion, transact } from './db.js';
 import { ServiceError, computeAvailability, expirePendingClaims } from './sessionService.js';
 import { requireAdmin, requireDashboard, requireOperator } from './routes.js';
 
@@ -577,6 +577,22 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       .header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       .header('content-disposition', `attachment; filename="luckydraw-sessions-${todayStamp()}.xlsx"`)
       .send(Buffer.from(buf));
+  });
+
+  /**
+   * 테스트 세션(is_test=1)과 딸린 기록을 모두 삭제한다. 테스트 세션은 재고를 예약·차감하지 않으므로
+   * prizes는 건드리지 않는다. 자식 테이블을 먼저 지워야 FK(draws/claims/play_metrics)에 안 걸린다.
+   */
+  app.delete('/api/admin/test-data', async (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    const ids = `SELECT session_id FROM sessions WHERE is_test = 1`;
+    const deleted = transact(() => {
+      for (const t of ['play_metrics', 'claims', 'draws', 'session_events', 'idempotency', 'app_errors']) {
+        db.exec(`DELETE FROM ${t} WHERE session_id IN (${ids})`);
+      }
+      return Number(db.prepare('DELETE FROM sessions WHERE is_test = 1').run().changes);
+    });
+    return reply.send({ ok: true, deletedSessions: deleted });
   });
 
   app.get('/api/admin/audit', async (req, reply) => {

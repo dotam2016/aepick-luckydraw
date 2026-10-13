@@ -140,6 +140,7 @@ const PAGE = HTML`<!doctype html>
       <button class="act ghost" onclick="loadSessions()">조회</button>
       <button class="act ghost" onclick="downloadCsv()">CSV 내보내기</button>
       <button class="act ghost" onclick="downloadXlsx()">Excel 내보내기</button>
+      <button class="act danger" onclick="deleteTestData()">Delete test data</button>
     </div>
     <div class="wrap">
       <h2>세션 로그</h2>
@@ -295,6 +296,12 @@ async function loadSessions(){
       +'<td class="dev">'+(r.claimed_at?fmt(r.claimed_at)+' / '+r.claimed_by : (r.void_reason||'-'))+'</td>'
       +'</tr>';
   }).join('') || '<tr><td colspan=10 class="dev">없음</td></tr>';
+}
+async function deleteTestData(){
+  if(!confirm('테스트 세션과 관련 기록을 모두 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+  try{ const r = await api('/api/admin/test-data',{method:'DELETE'});
+       show('테스트 세션 '+r.deletedSessions+'건 삭제 완료', true); loadSessions(); }
+  catch(e){ show(e.message, false); }
 }
 function todayStamp(){
   const d=new Date(); const p=n=>String(n).padStart(2,'0');
