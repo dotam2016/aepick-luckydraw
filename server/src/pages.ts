@@ -308,7 +308,7 @@ async function loadSessions(){
 }
 async function deleteTestData(){
   if(!confirm('테스트 세션과 관련 기록을 모두 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
-  try{ const r = await api('/api/admin/test-data',{method:'DELETE'});
+  try{ const r = await api('/api/admin/test-data',{method:'DELETE',body:'{}'});
        show('테스트 세션 '+r.deletedSessions+'건 삭제 완료', true); loadSessions(); }
   catch(e){ show(e.message, false); }
 }
