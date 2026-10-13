@@ -404,7 +404,7 @@ const PAGE_DASHBOARD = HTML`<!doctype html>
   <button id="toAdmin">← 지급 큐 / 대시보드</button>
   <button class="active" data-tab="prizes">경품 · 재고</button>
   <button data-tab="rules">확률 설정</button>
-  <button data-tab="stats">일별 통계</button>
+  <button data-tab="stats" hidden>일별 통계</button>
 </nav>
 
 <main>
