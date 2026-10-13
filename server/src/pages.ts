@@ -307,8 +307,7 @@ async function loadSessions(){
   }).join('') || '<tr><td colspan=10 class="dev">없음</td></tr>';
 }
 async function resetAll(){
-  if(prompt('모든 세션 기록을 삭제하고 재고를 초기값으로 되돌립니다. 되돌릴 수 없습니다.
-계속하려면 RESET 을 입력하세요.') !== 'RESET') return;
+  if(prompt('모든 세션 기록을 삭제하고 재고를 초기값으로 되돌립니다. 되돌릴 수 없습니다. 계속하려면 RESET 을 입력하세요.') !== 'RESET') return;
   try{ const r = await api('/api/admin/reset-all',{method:'DELETE',body:'{}'});
        show('초기화 완료 — 세션 '+r.deletedSessions+'건 삭제, 재고 복원', true); load(); loadSessions(); }
   catch(e){ show(e.message, false); }
