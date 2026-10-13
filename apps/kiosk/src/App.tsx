@@ -33,7 +33,8 @@ import { installDicts, setLocale, t } from './i18n';
 import { Attract } from './screens/Attract';
 import { OperatorPanel } from './screens/OperatorPanel';
 import { Play } from './screens/Play';
-import { Result } from './screens/Result';
+import { RESULT_IMAGES, Result } from './screens/Result';
+import { assetUrl, preloadImages } from './assetUrl';
 import type { Phase, PlayOutcome } from './game/clawGame';
 
 const params = new URLSearchParams(location.search);
@@ -88,6 +89,11 @@ export default function App() {
     fit();
     window.addEventListener('resize', fit);
     return () => window.removeEventListener('resize', fit);
+  }, []);
+
+  /* ---------- 안내·결과 화면 이미지 선로딩 (글자만 먼저 보이는 현상 방지) ---------- */
+  useEffect(() => {
+    void preloadImages(['Guide.webp', ...RESULT_IMAGES].map((f) => assetUrl(`/assets/cabinet/webp/${f}`)));
   }, []);
 
   /* ---------- 부트스트랩 ---------- */

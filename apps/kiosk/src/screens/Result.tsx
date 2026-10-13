@@ -9,7 +9,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import type { RevealPlan } from '@aepick/shared';
 import { getLocale, localized, t } from '../i18n';
 import { BALL_PALETTE } from '../game/layout';
-import { assetUrl } from '../assetUrl';
+import { assetUrl, useImagesReady } from '../assetUrl';
 
 function Confetti({ level }: { level: 1 | 2 | 3 }) {
   const pieces = useMemo(() => {
@@ -47,6 +47,12 @@ function Confetti({ level }: { level: 1 | 2 | 3 }) {
   );
 }
 
+/* 결과 화면이 쓰는 이미지 — App.tsx가 시작할 때 미리 받아 둔다 */
+export const RESULT_WIN_IMAGES = ['Vien.webp', 'gift.webp'];
+export const RESULT_IMAGES = [...RESULT_WIN_IMAGES, 'Vien2.webp', 'Chucmung.webp', 'Chucmung2.webp'];
+/* 당첨 타이틀은 글자가 그림에 박혀 있어 언어별로 파일이 다르다 (vi: Chucmung, 그 외: Chucmung2) */
+const winTitleFile = () => (getLocale() === 'vi' ? 'Chucmung.webp' : 'Chucmung2.webp');
+
 export interface ResultProps {
   reveal: RevealPlan;
   onReturn: () => void;
@@ -56,6 +62,10 @@ export interface ResultProps {
 export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
   const totalMs = reveal.resultSeconds * 1000;
   const startedAt = useRef(performance.now());
+  // 액자 이미지가 뜨기 전에 글자만 먼저 보이지 않도록, 이미지가 준비될 때까지 필드를 숨긴다
+  const files = reveal.win ? [...RESULT_WIN_IMAGES, winTitleFile()] : ['Vien2.webp'];
+  const imgsReady = useImagesReady(files.map((f) => assetUrl(`/assets/cabinet/webp/${f}`)));
+  const hideUntilReady = imgsReady ? undefined : { visibility: 'hidden' as const };
 
   useEffect(() => {
     if (disableTimeout) return;
@@ -76,7 +86,7 @@ export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
     return (
       <div className="result miss">
         {reveal.isTest && <div className="test-watermark">{t('result.testWatermark')}</div>}
-        <div className="result-field">
+        <div className="result-field" style={hideUntilReady}>
           <div
             className="result-miss-box"
             style={{ backgroundImage: `url(${assetUrl('/assets/cabinet/webp/Vien2.webp')})` }}
@@ -91,14 +101,14 @@ export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
   const prizeName = localized(reveal.prize?.name);
   /* 당첨 타이틀 이미지는 글자가 그림에 박혀 있어 언어별로 파일을 바꿔야 한다.
      Chucmung.png = 베트남어, Chucmung2.png = 영문(Congratulations). */
-  const titleImg = getLocale() === 'vi' ? 'Chucmung.webp' : 'Chucmung2.webp';
+  const titleImg = winTitleFile();
 
   return (
     <div className="result win">
       {reveal.isTest && <div className="test-watermark">{t('result.testWatermark')}</div>}
       <Confetti level={reveal.effectLevel} />
 
-      <div className="result-field">
+      <div className="result-field" style={hideUntilReady}>
         <img
           className="result-title-img"
           src={assetUrl(`/assets/cabinet/webp/${titleImg}`)}

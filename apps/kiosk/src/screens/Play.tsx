@@ -14,7 +14,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CreateSessionResponse } from '@aepick/shared';
-import { assetUrl } from '../assetUrl';
+import { assetUrl, useImagesReady } from '../assetUrl';
 import { ClawGame, initPhysics, physicsDebug, type Phase, type PlayOutcome } from '../game/clawGame';
 import { Cabinet2D } from '../game/Cabinet2D';
 import { resolveBallCount } from '../game/layout';
@@ -51,6 +51,7 @@ export function Play({
   const [aimLeft, setAimLeft] = useState(session.game.aimSeconds * 1000);
   const [fps, setFps] = useState(60);
   const [error, setError] = useState<string | null>(null);
+  const guideReady = useImagesReady([assetUrl('/assets/cabinet/webp/Guide.webp')]);
 
   const gameRef = useRef<ClawGame | null>(null);
   const rafRef = useRef(0);
@@ -194,7 +195,7 @@ export function Play({
         {/* 튜토리얼 오버레이 (G-01 READY) */}
         {phase === 'READY' && (
           <div className="tutorial">
-            <div className="tutorial-card">
+            <div className="tutorial-card" style={guideReady ? undefined : { visibility: 'hidden' }}>
               <img src={assetUrl('/assets/cabinet/webp/Guide.webp')} alt="" />
               <div className="tut-step tut-step1">
                 <span className="tut-num">1</span>
