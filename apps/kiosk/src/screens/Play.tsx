@@ -51,7 +51,7 @@ export function Play({
   const [aimLeft, setAimLeft] = useState(session.game.aimSeconds * 1000);
   const [fps, setFps] = useState(60);
   const [error, setError] = useState<string | null>(null);
-  const guideReady = useImagesReady([assetUrl('/assets/cabinet/webp/Guide.webp')]);
+  const guideReady = useImagesReady(['/assets/cabinet/webp/Guide.webp']);
 
   const gameRef = useRef<ClawGame | null>(null);
   const rafRef = useRef(0);

@@ -63,7 +63,7 @@ export function Result({ reveal, onReturn, disableTimeout }: ResultProps) {
   const startedAt = useRef(performance.now());
   // 액자 이미지가 뜨기 전에 글자만 먼저 보이지 않도록, 이미지가 준비될 때까지 필드를 숨긴다
   const files = reveal.win ? [...RESULT_WIN_IMAGES, winTitleFile()] : ['Vien2.webp'];
-  const imgsReady = useImagesReady(files.map((f) => assetUrl(`/assets/cabinet/webp/${f}`)));
+  const imgsReady = useImagesReady(files.map((f) => `/assets/cabinet/webp/${f}`));
   const hideUntilReady = imgsReady ? undefined : { visibility: 'hidden' as const };
 
   useEffect(() => {

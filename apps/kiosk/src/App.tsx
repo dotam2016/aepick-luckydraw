@@ -34,7 +34,7 @@ import { Attract } from './screens/Attract';
 import { OperatorPanel } from './screens/OperatorPanel';
 import { Play } from './screens/Play';
 import { Result } from './screens/Result';
-import { assetUrl, preloadFonts, preloadImages } from './assetUrl';
+import { preloadFonts, preloadImages } from './assetUrl';
 import type { Phase, PlayOutcome } from './game/clawGame';
 
 const params = new URLSearchParams(location.search);
@@ -105,7 +105,7 @@ export default function App() {
      글자(타이머·언어 버튼·안내문)는 HTML이라 즉시 뜨지만 배경·패널 이미지는 늦게 온다.
      전부 받아 decode할 때까지 화면 전체를 숨긴다. 네트워크가 멈춰도 갇히지 않도록 8초 뒤엔 그냥 연다. */
   useEffect(() => {
-    const urls = CABINET_IMAGES.map((f) => assetUrl(`/assets/cabinet/webp/${f}`));
+    const urls = CABINET_IMAGES.map((f) => `/assets/cabinet/webp/${f}`);
     Promise.race([Promise.all([preloadImages(urls), preloadFonts()]), new Promise((r) => setTimeout(r, 8000))]).then(
       () => setAssetsReady(true),
     );
