@@ -543,6 +543,96 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       .all() as Record<string, unknown>[];
   }
 
+  /** 참가자(세션) 전체 조회 — 엑셀 내보내기와 같은 필드 + 경품명·플레이 지표. 문서: docs/api-participants.md */
+  app.get('/api/admin/export/all', async (req, reply) => {
+    if (!requireAdmin(req, reply)) return;
+    const q = req.query as {
+      from?: string; to?: string; status?: string; tier?: string;
+      deviceId?: string; includeTest?: string; limit?: string; offset?: string;
+    };
+    const isDate = (v?: string) => v === undefined || (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)));
+    if (!isDate(q.from) || !isDate(q.to)) {
+      return reply.code(400).send({ error: 'BAD_DATE', message: 'from/to must be YYYY-MM-DD' });
+    }
+
+    const where: string[] = [];
+    const args: (string | number)[] = [];
+    if (q.includeTest !== '1') where.push('s.is_test = 0');
+    if (q.from) {
+      where.push('s.created_at >= ?');
+      args.push(new Date(`${q.from}T00:00:00${VN_OFFSET}`).toISOString());
+    }
+    if (q.to) {
+      where.push('s.created_at < ?');
+      args.push(new Date(new Date(`${q.to}T00:00:00${VN_OFFSET}`).getTime() + 24 * 3600_000).toISOString());
+    }
+    const statuses = q.status?.split(',').map((x) => x.trim()).filter(Boolean) ?? [];
+    if (statuses.length) {
+      where.push(`s.status IN (${statuses.map(() => '?').join(',')})`);
+      args.push(...statuses);
+    }
+    if (q.tier) {
+      where.push('d.result_tier = ?');
+      args.push(q.tier);
+    }
+    if (q.deviceId) {
+      where.push('s.device_id = ?');
+      args.push(q.deviceId);
+    }
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const from = `FROM sessions s
+         LEFT JOIN draws d USING(session_id)
+         LEFT JOIN claims c USING(session_id)
+         LEFT JOIN play_metrics m USING(session_id)
+         LEFT JOIN prizes p ON p.prize_id = d.prize_id
+         ${whereSql}`;
+
+    const limit = Math.min(Math.max(Math.trunc(Number(q.limit ?? 1000)) || 1000, 1), 20000);
+    const offset = Math.max(Math.trunc(Number(q.offset ?? 0)) || 0, 0);
+
+    const total = (db.prepare(`SELECT COUNT(*) AS c ${from}`).get(...args) as { c: number }).c;
+    const rows = db
+      .prepare(
+        `SELECT s.session_id, s.device_id, s.operator_id, s.is_test, s.status, s.rule_version,
+                s.created_at, s.played_at, s.closed_at, s.expires_at,
+                d.result_tier, p.name AS prize_name,
+                c.claim_code, c.claimed_at, c.claimed_by, c.void_reason,
+                m.aim_duration_ms, m.catch_x, m.auto_catch, m.min_fps, m.fps_bucket
+         ${from} ORDER BY s.created_at DESC LIMIT ? OFFSET ?`,
+      )
+      .all(...args, limit, offset) as Record<string, unknown>[];
+
+    return reply.send({
+      total,
+      limit,
+      offset,
+      items: rows.map((r) => ({
+        sessionId: r.session_id,
+        deviceId: r.device_id,
+        operatorId: r.operator_id,
+        isTest: r.is_test === 1,
+        status: r.status,
+        ruleVersion: r.rule_version,
+        createdAt: r.created_at,
+        playedAt: r.played_at,
+        closedAt: r.closed_at,
+        expiresAt: r.expires_at,
+        resultTier: r.result_tier ?? null,
+        win: r.result_tier != null && r.result_tier !== 'miss',
+        prizeName: r.prize_name ? JSON.parse(String(r.prize_name)) : null,
+        claimCode: r.claim_code ?? null,
+        claimedAt: r.claimed_at ?? null,
+        claimedBy: r.claimed_by ?? null,
+        voidReason: r.void_reason ?? null,
+        aimDurationMs: r.aim_duration_ms ?? null,
+        catchX: r.catch_x ?? null,
+        autoCatch: r.auto_catch == null ? null : r.auto_catch === 1,
+        minFps: r.min_fps ?? null,
+        fpsBucket: r.fps_bucket ?? null,
+      })),
+    });
+  });
+
   app.get('/api/admin/report.csv', async (req, reply) => {
     if (!requireOperator(req, reply)) return;
     const rows = fetchReportRows();
