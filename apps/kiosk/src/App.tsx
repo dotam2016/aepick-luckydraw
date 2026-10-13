@@ -34,7 +34,7 @@ import { Attract } from './screens/Attract';
 import { OperatorPanel } from './screens/OperatorPanel';
 import { Play } from './screens/Play';
 import { Result } from './screens/Result';
-import { assetUrl, preloadImages } from './assetUrl';
+import { assetUrl, preloadFonts, preloadImages } from './assetUrl';
 import type { Phase, PlayOutcome } from './game/clawGame';
 
 const params = new URLSearchParams(location.search);
@@ -106,8 +106,8 @@ export default function App() {
      전부 받아 decode할 때까지 화면 전체를 숨긴다. 네트워크가 멈춰도 갇히지 않도록 8초 뒤엔 그냥 연다. */
   useEffect(() => {
     const urls = CABINET_IMAGES.map((f) => assetUrl(`/assets/cabinet/webp/${f}`));
-    Promise.race([preloadImages(urls), new Promise((r) => setTimeout(r, 8000))]).then(() =>
-      setAssetsReady(true),
+    Promise.race([Promise.all([preloadImages(urls), preloadFonts()]), new Promise((r) => setTimeout(r, 8000))]).then(
+      () => setAssetsReady(true),
     );
   }, []);
 

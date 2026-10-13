@@ -19,6 +19,9 @@ export function assetUrl(path: string): string {
  * 화면은 useImagesReady가 true가 될 때까지 내용을 숨긴다. */
 const preloaded = new Map<string, Promise<void>>();
 const ready = new Set<string>();
+/* Image 객체를 계속 쥐고 있어야 디코드된 비트맵이 메모리 캐시에 남는다.
+   놓아 버리면 나중에 만든 <img>가 같은 URL을 또 받아 와서 글자만 먼저 보인다. */
+const pinned: HTMLImageElement[] = [];
 
 export function preloadImages(urls: string[]): Promise<void> {
   return Promise.all(
@@ -26,6 +29,7 @@ export function preloadImages(urls: string[]): Promise<void> {
       let p = preloaded.get(u);
       if (!p) {
         const img = new Image();
+        pinned.push(img);
         img.src = u;
         // 실패해도 ready로 취급한다 — 깨진 이미지 때문에 화면이 영영 숨겨지면 안 된다
         p = img
@@ -39,6 +43,15 @@ export function preloadImages(urls: string[]): Promise<void> {
       return p;
     }),
   ).then(() => {});
+}
+
+/* 글꼴도 첫 글자가 그려질 때에야 받기 시작한다. 라틴·베트남어 서브셋을 미리 받아
+   두지 않으면 결과 화면에서 글자가 늦게 나타나거나 대체 글꼴로 먼저 보인다. */
+export function preloadFonts(): Promise<void> {
+  if (!document.fonts) return Promise.resolve();
+  return Promise.all([document.fonts.load('700 40px Quicksand', 'aàảẫ'), document.fonts.load('400 40px Quicksand', 'aàảẫ')])
+    .then(() => {})
+    .catch(() => {});
 }
 
 export function useImagesReady(urls: string[]): boolean {
