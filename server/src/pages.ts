@@ -220,7 +220,7 @@ async function loadQueue(){
       + '<td>'+fmtVN(i.playedAt)+'</td>'
       + '<td class="'+ageCls(i.elapsedMinutes)+'">'+i.elapsedMinutes+'분</td>'
       + '<td><b>'+i.deviceId+'</b></td>'
-      + '<td class="dev">'+fmt(i.expiresAt)+'</td>'
+      + '<td class="dev">'+fmtVN(i.expiresAt)+'</td>'
       + '<td>'
         + '<button class="act" onclick="claimId(\''+i.sessionId+'\')">지급 완료</button> '
         + '<button class="act danger" onclick="voidId(\''+i.sessionId+'\')">무효</button>'
