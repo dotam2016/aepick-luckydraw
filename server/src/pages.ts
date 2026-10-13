@@ -107,7 +107,7 @@ const PAGE = HTML`<!doctype html>
     <div class="wrap">
       <h2>지급 대기 (PENDING_CLAIM · EXPIRED)</h2>
       <table><thead><tr>
-        <th>코드</th><th>등급</th><th>경품</th><th>경과</th><th>기기</th><th>만료</th><th style="width:200px">처리</th>
+        <th>코드</th><th>등급</th><th>경품</th><th>플레이 시각</th><th>경과</th><th>기기 (Máy)</th><th>만료</th><th style="width:200px">처리</th>
       </tr></thead><tbody id="queueBody"></tbody></table>
       <div id="queueEmpty" class="empty">지급 대기 세션이 없습니다.</div>
     </div>
@@ -198,6 +198,14 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
 function tierSpan(t){ return '<span class="tier '+t+'">'+(TIER_KO[t]||t)+'</span>'; }
 function ageCls(m){ return m>=30?'age-bad':(m>=10?'age-warn':''); }
 function fmt(iso){ return iso ? new Date(iso).toLocaleString('ko-KR',{hour12:false}) : '-'; }
+/* 베트남 시간 "HH:mm:ss dd/MM/yyyy" — 예: 14:35:07 13/10/2026 */
+function fmtVN(iso){
+  if(!iso) return '-';
+  const p = {};
+  new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Ho_Chi_Minh',hour12:false,day:'2-digit',month:'2-digit',year:'numeric',
+    hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(new Date(iso)).forEach(x=>p[x.type]=x.value);
+  return p.hour+':'+p.minute+':'+p.second+' '+p.day+'/'+p.month+'/'+p.year;
+}
 
 /* ---------- 지급 큐 ---------- */
 async function loadQueue(){
@@ -209,8 +217,9 @@ async function loadQueue(){
       + '<td class="code">'+i.claimCode+'</td>'
       + '<td>'+tierSpan(i.tier)+'</td>'
       + '<td>'+(i.prizeName.ko||i.prizeName.vi)+'</td>'
+      + '<td>'+fmtVN(i.playedAt)+'</td>'
       + '<td class="'+ageCls(i.elapsedMinutes)+'">'+i.elapsedMinutes+'분</td>'
-      + '<td class="dev">'+i.deviceId+'</td>'
+      + '<td><b>'+i.deviceId+'</b></td>'
       + '<td class="dev">'+fmt(i.expiresAt)+'</td>'
       + '<td>'
         + '<button class="act" onclick="claimId(\''+i.sessionId+'\')">지급 완료</button> '
