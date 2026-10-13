@@ -47,9 +47,8 @@ function Confetti({ level }: { level: 1 | 2 | 3 }) {
   );
 }
 
-/* 결과 화면이 쓰는 이미지 — App.tsx가 시작할 때 미리 받아 둔다 */
-export const RESULT_WIN_IMAGES = ['Vien.webp', 'gift.webp'];
-export const RESULT_IMAGES = [...RESULT_WIN_IMAGES, 'Vien2.webp', 'Chucmung.webp', 'Chucmung2.webp'];
+/* 결과 화면이 쓰는 이미지 (App.tsx의 CABINET_IMAGES가 시작할 때 미리 받아 둔다) */
+const RESULT_WIN_IMAGES = ['Vien.webp', 'gift.webp'];
 /* 당첨 타이틀은 글자가 그림에 박혀 있어 언어별로 파일이 다르다 (vi: Chucmung, 그 외: Chucmung2) */
 const winTitleFile = () => (getLocale() === 'vi' ? 'Chucmung.webp' : 'Chucmung2.webp');
 

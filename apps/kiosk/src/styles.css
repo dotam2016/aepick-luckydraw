@@ -80,6 +80,10 @@ body {
   overflow: hidden;
   background: var(--paper);
 }
+/* 이미지 선로딩 중에는 배경(--paper)만 보이게 하고 내용(글자 포함)은 숨긴다 — App.tsx assetsReady */
+.stage.loading > * {
+  visibility: hidden;
+}
 
 .layer {
   position: absolute;

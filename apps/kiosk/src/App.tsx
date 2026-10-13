@@ -33,7 +33,7 @@ import { installDicts, setLocale, t } from './i18n';
 import { Attract } from './screens/Attract';
 import { OperatorPanel } from './screens/OperatorPanel';
 import { Play } from './screens/Play';
-import { RESULT_IMAGES, Result } from './screens/Result';
+import { Result } from './screens/Result';
 import { assetUrl, preloadImages } from './assetUrl';
 import type { Phase, PlayOutcome } from './game/clawGame';
 
@@ -48,6 +48,15 @@ const QUALITY_OVERRIDE = (globalThis as Record<string, unknown>).__Q_LEVEL__ as
   | 'low'
   | undefined;
 const PIN_STORAGE = 'ld.pin';
+
+/** public/assets/cabinet/webp/ 의 모든 이미지 — 새 파일을 쓰면 여기에도 추가한다 */
+const CABINET_IMAGES = [
+  'background', 'cloud', 'rail', 'floor', 'front-ledge', 'panel',
+  'btn-left', 'btn-right', 'btn-catch',
+  'claw-carriage', 'claw-tube', 'claw-hub', 'claw-prong-left', 'claw-prong-right',
+  'heart1', 'heart2', 'heart3', 'heart4', 'heart5',
+  'tittle', 'tittle2', 'Guide', 'Chucmung', 'Chucmung2', 'Vien', 'Vien2', 'gift',
+].map((n) => `${n}.webp`);
 
 /** §12 — 단절 허용 시간을 넘기면 신규 플레이를 차단한다 */
 const HEALTH_INTERVAL_MS = 15_000;
@@ -76,6 +85,7 @@ export default function App() {
   const [revealMode, setRevealMode] = useState<RevealMode>(REVEAL_OVERRIDE ?? 'capsuleOpen');
   const [quality, setQuality] = useState<'high' | 'mid' | 'low'>(QUALITY_OVERRIDE ?? 'high');
   const [scale, setScale] = useState(1);
+  const [assetsReady, setAssetsReady] = useState(false);
 
   const outcomeRef = useRef<PlayOutcome | null>(null);
   const verifyRef = useRef<{ consistent: boolean; detail: string } | null>(null);
@@ -91,9 +101,14 @@ export default function App() {
     return () => window.removeEventListener('resize', fit);
   }, []);
 
-  /* ---------- 안내·결과 화면 이미지 선로딩 (글자만 먼저 보이는 현상 방지) ---------- */
+  /* ---------- 이미지 선로딩 (글자만 먼저 보이는 현상 방지) ----------
+     글자(타이머·언어 버튼·안내문)는 HTML이라 즉시 뜨지만 배경·패널 이미지는 늦게 온다.
+     전부 받아 decode할 때까지 화면 전체를 숨긴다. 네트워크가 멈춰도 갇히지 않도록 8초 뒤엔 그냥 연다. */
   useEffect(() => {
-    void preloadImages(['Guide.webp', ...RESULT_IMAGES].map((f) => assetUrl(`/assets/cabinet/webp/${f}`)));
+    const urls = CABINET_IMAGES.map((f) => assetUrl(`/assets/cabinet/webp/${f}`));
+    Promise.race([preloadImages(urls), new Promise((r) => setTimeout(r, 8000))]).then(() =>
+      setAssetsReady(true),
+    );
   }, []);
 
   /* ---------- 부트스트랩 ---------- */
@@ -333,7 +348,7 @@ export default function App() {
   return (
     <div className="viewport">
       <div
-        className="stage"
+        className={assetsReady ? 'stage' : 'stage loading'}
         style={{ transform: `translate(${-540 * scale}px, ${-960 * scale}px) scale(${scale})` }}
       >
         {(screen === 'WAITING' || screen === 'SESSION_PREPARE') && (
