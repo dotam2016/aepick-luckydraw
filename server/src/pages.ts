@@ -107,7 +107,7 @@ const PAGE = HTML`<!doctype html>
     <div class="wrap">
       <h2>지급 대기 (PENDING_CLAIM · EXPIRED)</h2>
       <table><thead><tr>
-        <th>코드</th><th>등급</th><th>경품</th><th>플레이 시각</th><th>경과</th><th>기기 (Máy)</th><th>만료</th><th style="width:200px">처리</th>
+        <th>코드</th><th>등급</th><th>경품</th><th>플레이 시각</th><th>경과</th><th>Screen</th><th>만료</th><th style="width:200px">처리</th>
       </tr></thead><tbody id="queueBody"></tbody></table>
       <div id="queueEmpty" class="empty">지급 대기 세션이 없습니다.</div>
     </div>

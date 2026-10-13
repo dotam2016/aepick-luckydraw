@@ -31,7 +31,7 @@ Tất cả đều **tùy chọn**. Không truyền gì thì trả về các lư�
 | `to` | `YYYY-MM-DD` | — | Chỉ lấy lượt chơi **tạo đến hết ngày này** (giờ Việt Nam, gồm cả ngày `to`). |
 | `status` | chuỗi | — | Lọc theo trạng thái. Truyền nhiều giá trị cách nhau dấu phẩy, ví dụ `PENDING_CLAIM,EXPIRED`. Xem bảng trạng thái ở mục 6. |
 | `tier` | chuỗi | — | Lọc theo kết quả: `t1`, `t2`, `t3`, `t4`, `t5` hoặc `miss`. |
-| `deviceId` | chuỗi | — | Lọc theo máy, ví dụ `Máy 1` (nhớ mã hóa URL: `M%C3%A1y%201`). |
+| `deviceId` | chuỗi | — | Lọc theo máy, ví dụ `Screen 1` (nhớ mã hóa URL: `Screen%201`). |
 | `includeTest` | `1` | không gồm test | Truyền `1` để gồm cả lượt chơi test. |
 | `limit` | số | `1000` | Số dòng tối đa mỗi lần gọi (từ 1 đến 20000). |
 | `offset` | số | `0` | Bỏ qua bao nhiêu dòng đầu — dùng để phân trang. |
@@ -69,7 +69,7 @@ Ví dụ rút gọn (dữ liệu thật từ DB local, 2 dòng):
   "items": [
     {
       "sessionId": "cfbe8430-ed2b-4ad8-832d-ac11b0b3ee8c",
-      "deviceId": "Máy 1",
+      "deviceId": "Screen 1",
       "operatorId": "operator",
       "isTest": false,
       "status": "EXPIRED",
@@ -93,7 +93,7 @@ Ví dụ rút gọn (dữ liệu thật từ DB local, 2 dòng):
     },
     {
       "sessionId": "a4e028fe-18ea-44e1-b022-02faded9bce1",
-      "deviceId": "Máy 2",
+      "deviceId": "Screen 2",
       "operatorId": "operator",
       "isTest": false,
       "status": "CLAIMED",
@@ -120,7 +120,7 @@ Ví dụ rút gọn (dữ liệu thật từ DB local, 2 dòng):
 ```
 
 (Trong dữ liệu thật của DB local, `deviceId` còn là chuỗi ngẫu nhiên kiểu `kiosk-59510pft`; ở ví dụ trên tôi
-đổi thành `Máy 1`/`Máy 2` để minh họa kết quả của tham số `?m=` trên kiosk.)
+đổi thành `Screen 1`/`Screen 2` để minh họa kết quả của tham số `?m=` trên kiosk.)
 
 ### 5.1. Phần bao ngoài
 
@@ -138,7 +138,7 @@ Các giờ đều là **UTC dạng ISO 8601** (kết thúc bằng `Z`). Giờ Vi
 | Field | Kiểu | Giải thích |
 |---|---|---|
 | `sessionId` | chuỗi | Mã duy nhất của lượt chơi. |
-| `deviceId` | chuỗi | Máy kiosk đã chơi. Là `Máy 1`, `Máy 2`… nếu máy được mở bằng `?m=1`, `?m=2`; nếu không là chuỗi ngẫu nhiên `kiosk-xxxxxxxx`. |
+| `deviceId` | chuỗi | Máy kiosk đã chơi. Là `Screen 1`, `Screen 2`… nếu máy được mở bằng `?m=1`, `?m=2`; nếu không là chuỗi ngẫu nhiên `kiosk-xxxxxxxx`. |
 | `operatorId` | chuỗi | Người/nguồn duyệt lượt chơi. Kiosk hiện luôn gửi `operator`. |
 | `isTest` | boolean | `true` nếu là lượt chơi test (không trừ kho). |
 | `status` | chuỗi | Trạng thái hiện tại của lượt chơi, xem bảng mục 6. |

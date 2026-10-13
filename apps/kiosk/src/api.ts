@@ -46,9 +46,9 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 const DEVICE_KEY = 'ld.deviceId';
 
 export function getDeviceId(): string {
-  // ?m=1 → "Máy 1": 한 번 열어 두면 localStorage에 남아, 어드민 지급 큐에서 기기를 구분한다
+  // ?m=1 → "Screen 1": 한 번 열어 두면 localStorage에 남아, 어드민 지급 큐에서 기기를 구분한다
   const machine = new URLSearchParams(location.search).get('m')?.trim();
-  if (machine) localStorage.setItem(DEVICE_KEY, `Máy ${machine.slice(0, 20)}`);
+  if (machine) localStorage.setItem(DEVICE_KEY, `Screen ${machine.slice(0, 20)}`);
   let id = localStorage.getItem(DEVICE_KEY);
   if (!id) {
     id = 'kiosk-' + Math.random().toString(36).slice(2, 10);
