@@ -17,7 +17,7 @@ import {
   type ResultTier,
   type TierProbability,
 } from '@aepick/shared';
-import { db, getActiveRule, getEventConfig, listPrizes, logAudit, publishRuleVersion, transact } from './db.js';
+import { db, getActiveRule, getEventConfig, listPrizes, logAudit, publishRuleVersion } from './db.js';
 import { ServiceError, computeAvailability, expirePendingClaims } from './sessionService.js';
 import { requireAdmin, requireDashboard, requireOperator } from './routes.js';
 
@@ -667,35 +667,6 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       .header('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
       .header('content-disposition', `attachment; filename="luckydraw-sessions-${todayStamp()}.xlsx"`)
       .send(Buffer.from(buf));
-  });
-
-  /**
-   * 전체 초기화 — 모든 세션과 딸린 기록을 지우고 재고를 새 날 기준으로 되돌린다.
-   * 1~3등은 일일 기본 수량(DAILY_RESET_PRIZE_QTY), 그 밖의 등급은 예약·지급분을 전부 되돌린 총량.
-   * reserved/claimed는 0으로 비운다. 확률 규칙·행사 설정·감사 로그는 건드리지 않는다.
-   * 자식 테이블을 먼저 지워야 FK(draws/claims/play_metrics)에 안 걸린다.
-   */
-  app.delete('/api/admin/reset-all', async (req, reply) => {
-    if (!requireAdmin(req, reply)) return;
-    const result = transact(() => {
-      for (const t of ['play_metrics', 'claims', 'draws', 'session_events', 'idempotency', 'app_errors']) {
-        db.exec(`DELETE FROM ${t}`);
-      }
-      const deletedSessions = Number(db.prepare('DELETE FROM sessions').run().changes);
-
-      const stock: Record<string, { before: number; after: number }> = {};
-      for (const p of listPrizes()) {
-        const target = DAILY_RESET_PRIZE_QTY[p.tier] ?? p.remainingQty + p.reservedQty + p.claimedQty;
-        db.prepare(
-          `UPDATE prizes SET remaining_qty = ?, reserved_qty = 0, claimed_qty = 0, total_qty = ?, day_start_qty = ?
-           WHERE tier = ?`,
-        ).run(target, target, target, p.tier);
-        stock[p.tier] = { before: p.remainingQty, after: target };
-      }
-      return { deletedSessions, stock };
-    });
-    logAudit('admin', 'data.resetAll', { after: result });
-    return reply.send({ ok: true, ...result });
   });
 
   app.get('/api/admin/audit', async (req, reply) => {

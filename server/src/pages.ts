@@ -140,7 +140,6 @@ const PAGE = HTML`<!doctype html>
       <button class="act ghost" onclick="loadSessions()">조회</button>
       <button class="act ghost" onclick="downloadCsv()">CSV 내보내기</button>
       <button class="act ghost" onclick="downloadXlsx()">Excel 내보내기</button>
-      <button class="act danger" onclick="resetAll()">Reset all data</button>
     </div>
     <div class="wrap">
       <h2>세션 로그</h2>
@@ -305,12 +304,6 @@ async function loadSessions(){
       +'<td class="dev">'+(r.claimed_at?fmt(r.claimed_at)+' / '+r.claimed_by : (r.void_reason||'-'))+'</td>'
       +'</tr>';
   }).join('') || '<tr><td colspan=10 class="dev">없음</td></tr>';
-}
-async function resetAll(){
-  if(prompt('모든 세션 기록을 삭제하고 재고를 초기값으로 되돌립니다. 되돌릴 수 없습니다. 계속하려면 RESET 을 입력하세요.') !== 'RESET') return;
-  try{ const r = await api('/api/admin/reset-all',{method:'DELETE',body:'{}'});
-       show('초기화 완료 — 세션 '+r.deletedSessions+'건 삭제, 재고 복원', true); load(); loadSessions(); }
-  catch(e){ show(e.message, false); }
 }
 function todayStamp(){
   const d=new Date(); const p=n=>String(n).padStart(2,'0');
