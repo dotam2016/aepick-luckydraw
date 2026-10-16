@@ -7,7 +7,7 @@
  * 사용자용 Start 버튼은 노출하지 않는다. 운영자 승인만이 세션을 시작한다.
  */
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Locale } from '@aepick/shared';
 import { getLocale, setLocale, t } from '../i18n';
 import { assetUrl } from '../assetUrl';
@@ -29,17 +29,6 @@ const KIOSK_LOCALES: Locale[] = ['vi', 'en'];
 
 export function Attract({ online, blockedReason, onOperatorEnter, onLocaleChange }: AttractProps) {
   const [locale, setLocaleState] = useState<Locale>(getLocale());
-  const pressTimer = useRef<number | null>(null);
-
-  /* 숨김 핫스팟 2초 롱프레스 → 운영자 패널 (§6.1) */
-  const startPress = () => {
-    pressTimer.current = window.setTimeout(onOperatorEnter, 2000);
-  };
-  const cancelPress = () => {
-    if (pressTimer.current) window.clearTimeout(pressTimer.current);
-    pressTimer.current = null;
-  };
-
   const pick = (l: Locale) => {
     setLocale(l);
     setLocaleState(l);
@@ -55,13 +44,8 @@ export function Attract({ online, blockedReason, onOperatorEnter, onLocaleChange
       {/* 조작부는 같은 컴포넌트를 재사용한다 — 입력·안내문은 막되 타이머는 0:00으로 남겨 둔다 */}
       <Controller remainingMs={0} totalMs={1} active={false} finished onHold={noop} onDrop={noop} />
 
-      <div
-        className="hotspot tl"
-        onPointerDown={startPress}
-        onPointerUp={cancelPress}
-        onPointerLeave={cancelPress}
-        onPointerCancel={cancelPress}
-      />
+      {/* 숨김 핫스팟 탭 → 운영자 패널 (롱프레스 없음; OPERATOR_HOLD 화면과 동일) */}
+      <div className="hotspot tl" onPointerDown={onOperatorEnter} />
 
       <div className="locale-switch">
         {KIOSK_LOCALES.map((l) => (

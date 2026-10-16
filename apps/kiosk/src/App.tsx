@@ -186,7 +186,11 @@ export default function App() {
     setOpBusy(true);
     setOpError(null);
     // 동일 멱등키로만 재시도한다 — createSession 내부에서 처리 (§12)
-    const idempotencyKey = crypto.randomUUID();
+    // crypto.randomUUID는 secure context(HTTPS/localhost)에서만 있다 — http://LAN-IP 접속 시 undefined
+    const idempotencyKey =
+      typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
 
     setScreen('SESSION_PREPARE');
     try {
